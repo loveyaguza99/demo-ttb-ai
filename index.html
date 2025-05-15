@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Real-Time Audio Streaming with Voice Detection</title>
+  </head>
+  <body>
+    <h1>Real-Time Audio Streaming with Voice Detection</h1>
+    <button id="recordButton">Start Streaming</button>
+    <button id="stopButton" disabled>Stop Streaming</button>
+    <p id="status"></p>
+    <audio id="audioPlayer" controls autoplay style="display: none"></audio>
+
+    <!-- Add input text and send button -->
+    <input type="text" id="textInput" placeholder="Type your message here" />
+    <button id="sendButton">Send</button>
+
+    <script>
+      const recordButton = document.getElementById("recordButton");
+      const stopButton = document.getElementById("stopButton");
+      const status = document.getElementById("status");
+      const audioPlayer = document.getElementById("audioPlayer");
+      const textInput = document.getElementById("textInput");
+      const sendButton = document.getElementById("sendButton");
+
+      let mediaRecorder;
+      let socket;
+      let audioContext;
+      let analyser;
+      let microphone;
+      let javascriptNode;
+      let isRecording = false;
+      let isPlayAudio = false;
+
+      function register() {
+        yourId = "test";
+        // yourId = document.getElementById("clientId").value;
+        socket.send(JSON.stringify({ type: "register", clientId: yourId }));
+      }
+
+      function VAD() {
+        yourId = "test";
+        // yourId = document.getElementById("clientId").value;
+        socket.send(JSON.stringify({ type: "VAD", clientId: yourId }));
+      }
+
+      recordButton.addEventListener("click", async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+
+          // Initialize Web Audio API
+          audioContext = new (window.AudioContext ||
+            window.webkitAudioContext)();
+          analyser = audioContext.createAnalyser();
+          microphone = audioContext.createMediaStreamSource(stream);
+          javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+
+          analyser.smoothingTimeConstant = 0.8;
+          analyser.fftSize = 1024;
+
+          microphone.connect(analyser);
+          analyser.connect(javascriptNode);
+          javascriptNode.connect(audioContext.destination);
+
+          // Initialize MediaRecorder
+          mediaRecorder = new MediaRecorder(stream);
+
+          // Open WebSocket connection
+          socket = new WebSocket("ws://localhost:3000");
+
+          socket.onopen = () => {
+            register();
+            status.textContent = "Streaming started...";
+            recordButton.disabled = true;
+            stopButton.disabled = false;
+
+            mediaRecorder.ondataavailable = (event) => {
+              if (socket.readyState === WebSocket.OPEN) {
+                // socket.send(event.data); // Send audio chunks to the server
+              }
+            };
+
+            let silenceStartTime = null;
+            const SILENCE_DURATION = 1000;
+
+            javascriptNode.onaudioprocess = () => {
+              const array = new Uint8Array(analyser.frequencyBinCount);
+              analyser.getByteFrequencyData(array);
+              const volume = array.reduce((a, b) => a + b) / array.length;
+
+              const now = Date.now();
+
+              if (volume > 50) {
+                status.textContent = "Voice detected!";
+                silenceStartTime = null;
+                if (!isRecording && !isPlayAudio) {
+                  mediaRecorder.start(100);
+                  isRecording = true;
+                }
+              } else {
+                status.textContent = "No voice detected.";
+                if (isRecording) {
+                  if (!silenceStartTime) {
+                    silenceStartTime = now;
+                  } else if (now - silenceStartTime > SILENCE_DURATION) {
+                    mediaRecorder.stop();
+                    isRecording = false;
+                    silenceStartTime = null;
+                    VAD()
+                    console.log("User stopped talking");
+                  }
+                }
+              }
+            };
+          };
+
+          // Handle messages from the server
+          socket.onmessage = (event) => {
+            if (typeof event.data === "string") {
+              const textResponse = document.createElement("p");
+
+              let parsedData;
+              try {
+                parsedData = JSON.parse(event.data);
+              } catch (err) {
+                console.warn("Received non-JSON string:", event.data);
+                parsedData = null;
+              }
+
+              // ตรวจสอบว่า parsedData มีโครงสร้างที่ถูกต้อง
+              if (parsedData && parsedData.role === "assistant") {
+                textResponse.textContent = `AI: ${parsedData.content}`;
+              } else {
+                textResponse.textContent = `ME: ${event.data}`;
+              }
+              document.body.appendChild(textResponse);
+            } else {
+              const audioBlob = new Blob([event.data], { type: "audio/wav" });
+              const audioUrl = URL.createObjectURL(audioBlob);
+
+              audioPlayer.src = audioUrl;
+              audioPlayer.style.display = "block";
+              isPlayAudio = true;
+
+              if (audioBlob.size === 0) {
+                console.log("Empty audio received, not playing");
+                isPlayAudio = false;
+              }
+
+              audioPlayer.play();
+
+              audioPlayer.onended = () => {
+                isPlayAudio = false;
+              };
+            }
+          };
+
+          socket.onerror = (error) => {
+            console.error("WebSocket error:", error);
+            status.textContent = "WebSocket error occurred.";
+          };
+
+          socket.onclose = () => {
+            status.textContent = "Streaming stopped.";
+          };
+        } catch (error) {
+          console.error("Error accessing microphone:", error);
+          status.textContent = "Error accessing microphone.";
+        }
+      });
+
+      stopButton.addEventListener("click", () => {
+        if (isRecording) {
+          mediaRecorder.stop();
+        }
+        socket.close();
+        recordButton.disabled = false;
+        stopButton.disabled = true;
+        status.textContent = "Stopped streaming.";
+
+        if (audioContext) {
+          audioContext.close();
+        }
+      });
+
+      // Handle sending text messages
+      sendButton.addEventListener("click", () => {
+        const message = textInput.value.trim();
+        if (message && socket.readyState === WebSocket.OPEN) {
+          socket.send(message);
+          console.log("Message sent:", message);
+          textInput.value = "";
+          // VAD();
+        } else {
+          console.error("WebSocket is not open or message is empty.");
+        }
+      });
+    </script>
+  </body>
+</html>
