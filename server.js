@@ -65,9 +65,9 @@ wss.on("connection", (ws) => {
     if (data.type === "register") {
       clientId = data.clientId;
       privateRooms.set(clientId, ws);
-      ws.send(
-        JSON.stringify({ type: "system", message: `Registered as ${clientId}` })
-      );
+      // ws.send(
+      //   JSON.stringify({ type: "system", message: `Registered as ${clientId}` })
+      // );
     }
 
     if (data.type === "endconversation") {
@@ -108,29 +108,37 @@ wss.on("connection", (ws) => {
           const audioBuffer = await Buffer.concat(audioChunks);
           audioChunks = [];
           console.log("audioBuffer.length", audioBuffer.length);
-          const wavBuffer = await convertWebmToWavBuffer(audioBuffer); // แปลง WebM เป็น WAV
-          console.log("✅ Converted to WAV Buffer");
-
-          // ==== บันทึกไฟล์ wav ลงเครื่อง server ====
-          const outputDir = path.join(__dirname, "recordings");
-          if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
+          try {
+            const wavBuffer = await convertWebmToWavBuffer(audioBuffer); // แปลง WebM เป็น WAV
+            console.log("✅ Converted to WAV Buffer");
+            // speechToText
+            const text = await speechToText(wavBuffer);
+            message = text;
+          } catch (err) {
+            console.error("Text-to-speech error:");
+            return;
           }
-          const filename = `audio_${Date.now()}.wav`;
-          const filepath = path.join(outputDir, filename);
-          fs.writeFileSync(filepath, wavBuffer);
-          console.log("✅ Saved wav file to:", filepath);
-          // ==== จบส่วนบันทึกไฟล์ ====
 
-          // speechToText
-          const text = await speechToText(wavBuffer);
-          message = text;
+          // // ==== บันทึกไฟล์ wav ลงเครื่อง server ====
+          // const outputDir = path.join(__dirname, "recordings");
+          // if (!fs.existsSync(outputDir)) {
+          //   fs.mkdirSync(outputDir);
+          // }
+          // const filename = `audio_${Date.now()}.wav`;
+          // const filepath = path.join(outputDir, filename);
+          // fs.writeFileSync(filepath, wavBuffer);
+          // console.log("✅ Saved wav file to:", filepath);
+          // // ==== จบส่วนบันทึกไฟล์ ====
         } else if (messageType === "text") {
           // รับข้อมูล text
           message = data.toString();
         }
 
         console.log("🚀 ~ ws.on ~ message:", message);
+        // เช็คว่า text ว่างหรือ undefined ให้ return ออกไปเลย
+        if (!message || message.trim() === "") {
+          return;
+        }
         ws.send(message);
 
         // chat completion
@@ -165,9 +173,13 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
-    // if (clientId) {
-    //   privateRooms.delete(clientId);
-    // }
+    if (clientId) {
+      privateRooms.delete(clientId);
+    }
+    clientId = null;
+    audioChunks = [];
+    messageType = null;
+    history = [];
   });
 });
 
