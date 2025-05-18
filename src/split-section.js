@@ -1,24 +1,27 @@
-require('dotenv').config();
-const math = require('mathjs'); // ใช้ math.js สำหรับคำนวณ Cosine Similarity
+require("dotenv").config();
+const math = require("mathjs"); // ใช้ math.js สำหรับคำนวณ Cosine Similarity
 const Similarity = require("compute-cosine-similarity");
 const { AzureOpenAI } = require("openai");
 
-const modelName = process.env.AZURE_OPENAI_EMBEDDINGS_MODEL
+const modelName = process.env.AZURE_OPENAI_EMBEDDINGS_MODEL;
 const endpoint = process.env.AZURE_OPENAI_API_ENDPOINT;
 const apiKey = process.env.AZURE_OPENAI_API_KEY;
-const deployment = process.env.AZURE_OPENAI_EMBEDDINGS_MODEL
-const apiVersion = process.env.AZURE_OPENAI_EMBEDDINGS_API_VERSION
-const options = { endpoint, apiKey, deployment, apiVersion }
+const deployment = process.env.AZURE_OPENAI_EMBEDDINGS_MODEL;
+const apiVersion = process.env.AZURE_OPENAI_EMBEDDINGS_API_VERSION;
+const options = { endpoint, apiKey, deployment, apiVersion };
 
 const client = new AzureOpenAI(options);
 
 async function getEmbedding(input) {
   try {
-    const result = await client.embeddings.create({ input: [input], model: modelName });
+    const result = await client.embeddings.create({
+      input: [input],
+      model: modelName,
+    });
     const embedding = result.data[0].embedding;
     return embedding;
   } catch (error) {
-    console.error('Error getting embedding:', error);
+    console.error("Error getting embedding:", error);
     return null;
   }
 }
@@ -109,7 +112,7 @@ async function splitSection(textArray, bestScript) {
     const sectionKeys = Object.keys(bestScript.sections);
     const sectionScores = {};
     const sectionCounts = {};
-    sectionKeys.forEach(key => {
+    sectionKeys.forEach((key) => {
       sectionScores[key] = 0;
       sectionCounts[key] = 0;
     });
@@ -139,7 +142,8 @@ async function splitSection(textArray, bestScript) {
 
       while (currentSectionIndex < sectionKeys.length) {
         const currentSectionKey = sectionKeys[currentSectionIndex];
-        const currentSectionEmbeddings = dialogueEmbeddingCache[currentSectionKey];
+        const currentSectionEmbeddings =
+          dialogueEmbeddingCache[currentSectionKey];
 
         // หา similarity สูงสุดของ section ปัจจุบัน
         let maxCurrent = -Infinity;
@@ -165,7 +169,6 @@ async function splitSection(textArray, bestScript) {
           maxNext = Math.max(maxNext, sim);
         }
 
-
         // เปรียบเทียบตาม logic
         // ถ้า dialogue ที่มี score สูงสุดของ section ปัจจุบัน มี score สูงกว่า หรือเท่ากัน กับ dialogue ที่มี score สูงสุด ของ section ถัดไป ให้ถือว่า dialogue นี้เป็นของ section ปัจจุบัน
         if (maxCurrent >= maxNext) {
@@ -181,9 +184,15 @@ async function splitSection(textArray, bestScript) {
 
     // คำนวณค่าเฉลี่ยแต่ละ section
     const score = {};
-    sectionKeys.forEach(key => {
-      const avg = sectionCounts[key] > 0 ? sectionScores[key] / sectionCounts[key] : 0;
-      score[key] = avg.toFixed(2);
+    sectionKeys.forEach((key) => {
+      const avg =
+        sectionCounts[key] > 0 ? sectionScores[key] / sectionCounts[key] : 0;
+      // score[key] = avg.toFixed(2);
+
+      // สมมติ avg อยู่ในช่วง 0-1 ให้แปลงเป็น 1-10 (ถ้า similarity อาจติดลบ ให้ clamp เป็น 0-1 ก่อน)
+      const normalized = Math.max(0, Math.min(1, avg));
+      const scaled = normalized * 10; // 0 => 1, 1 => 10
+      score[key] = scaled.toFixed(2); // แสดงทศนิยม 2 ตำแหน่ง
     });
 
     return { score };
@@ -194,5 +203,5 @@ async function splitSection(textArray, bestScript) {
 }
 
 module.exports = {
-  splitSection
+  splitSection,
 };
