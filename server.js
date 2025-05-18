@@ -22,11 +22,11 @@ const bestScript = testScript4;
 const wss = new WebSocket.Server({ port: 3001 });
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 // เก็บ clients ตาม userId หรือ clientId
-const privateRooms = new Map(); // เช่น { 'user123': ws }
+// const privateRooms = new Map(); // เช่น { 'user123': ws }
 
 wss.on("connection", (ws) => {
   console.log("Client connected");
-  let clientId = null;
+  // let clientId = null;
   let audioChunks = [];
   let messageType = null;
   let history = [];
@@ -49,9 +49,16 @@ wss.on("connection", (ws) => {
     } else {
       const text = rawMessage.toString();
       try {
-        data = JSON.parse(text);
-        // messageType = 'json';
-        console.log("✅ Received JSON:", data);
+          data = JSON.parse(text);
+if (typeof data === "object" && data !== null && !Array.isArray(data)) {
+    // messageType = 'json';
+    console.log("✅ Received JSON:", data);
+  } else {
+    // ถ้าไม่ใช่ object ให้ถือว่าเป็น text
+    data = text;
+    messageType = "text";
+    console.log("📝 Received plain text:", data);
+  }
       } catch {
         data = text;
         messageType = "text";
@@ -63,8 +70,8 @@ wss.on("connection", (ws) => {
 
     //แยก instance ของ clientId
     if (data.type === "register") {
-      clientId = data.clientId;
-      privateRooms.set(clientId, ws);
+      // clientId = data.clientId;
+      // privateRooms.set(clientId, ws);
       // ws.send(
       //   JSON.stringify({ type: "system", message: `Registered as ${clientId}` })
       // );
@@ -114,24 +121,26 @@ wss.on("connection", (ws) => {
             // speechToText
             const text = await speechToText(wavBuffer);
             message = text;
+
+                      // ==== บันทึกไฟล์ wav ลงเครื่อง server ====
+          const outputDir = path.join(__dirname, "recordings");
+          if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir);
+          }
+          const filename = `audio_${Date.now()}.wav`;
+          const filepath = path.join(outputDir, filename);
+          fs.writeFileSync(filepath, wavBuffer);
+          console.log("✅ Saved wav file to:", filepath);
+          // ==== จบส่วนบันทึกไฟล์ ====
           } catch (err) {
             console.error("Text-to-speech error:");
             return;
           }
 
-          // // ==== บันทึกไฟล์ wav ลงเครื่อง server ====
-          // const outputDir = path.join(__dirname, "recordings");
-          // if (!fs.existsSync(outputDir)) {
-          //   fs.mkdirSync(outputDir);
-          // }
-          // const filename = `audio_${Date.now()}.wav`;
-          // const filepath = path.join(outputDir, filename);
-          // fs.writeFileSync(filepath, wavBuffer);
-          // console.log("✅ Saved wav file to:", filepath);
-          // // ==== จบส่วนบันทึกไฟล์ ====
         } else if (messageType === "text") {
           // รับข้อมูล text
           message = data.toString();
+          //  message = typeof data === "string" ? data : String(data);
         }
 
         console.log("🚀 ~ ws.on ~ message:", message);
@@ -139,7 +148,8 @@ wss.on("connection", (ws) => {
         if (!message || message.trim() === "") {
           return;
         }
-        ws.send(message);
+        // ws.send(message);
+        ws.send(JSON.stringify({ content: message }));
 
         // chat completion
         const aiResponse = await azureOpenAIChat(bestScript, message, history);
@@ -173,10 +183,10 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
-    if (clientId) {
-      privateRooms.delete(clientId);
-    }
-    clientId = null;
+    // if (clientId) {
+    //   privateRooms.delete(clientId);
+    // }
+    // clientId = null;
     audioChunks = [];
     messageType = null;
     history = [];
