@@ -18,7 +18,7 @@ const {
 const fs = require("fs");
 const path = require("path");
 
-const bestScript = testScript4;
+// const bestScript = testScript4;
 const wss = new WebSocket.Server({ port: 3001 });
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 // เก็บ clients ตาม userId หรือ clientId
@@ -27,6 +27,7 @@ ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 wss.on("connection", (ws) => {
   console.log("Client connected");
   // let clientId = null;
+  let bestScript = '';
   let audioChunks = [];
   let messageType = null;
   let history = [];
@@ -70,6 +71,8 @@ if (typeof data === "object" && data !== null && !Array.isArray(data)) {
 
     //แยก instance ของ clientId
     if (data.type === "register") {
+      bestScript = data.content;
+      console.log("🚀 ~ ws.on ~ bestScript:", bestScript)
       // clientId = data.clientId;
       // privateRooms.set(clientId, ws);
       // ws.send(
