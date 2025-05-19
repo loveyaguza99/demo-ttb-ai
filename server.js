@@ -4,30 +4,15 @@ const { speechToText } = require("./src/speech-to-text");
 const { azureOpenAIChat } = require("./src/openai-chat");
 const { textToSpeech } = require("./src/text-to-speech-streamoutput");
 const { splitSection } = require("./src/split-section");
-const { Readable } = require("stream");
-const ffmpeg = require("fluent-ffmpeg");
-const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg");
-const { PassThrough } = require("stream");
-const {
-  testScript1,
-  testScript2,
-  testScript3,
-  testScript4,
-} = require("./bestScript");
 
 const fs = require("fs");
 const path = require("path");
 
-// const bestScript = testScript4;
 const wss = new WebSocket.Server({ port: 3001 });
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-// เก็บ clients ตาม userId หรือ clientId
-// const privateRooms = new Map(); // เช่น { 'user123': ws }
 
 wss.on("connection", (ws) => {
   console.log("Client connected");
-  // let clientId = null;
-  let bestScript = '';
+  let bestScript = "";
   let audioChunks = [];
   let messageType = null;
   let history = [];
@@ -50,16 +35,16 @@ wss.on("connection", (ws) => {
     } else {
       const text = rawMessage.toString();
       try {
-          data = JSON.parse(text);
-if (typeof data === "object" && data !== null && !Array.isArray(data)) {
-    // messageType = 'json';
-    console.log("✅ Received JSON:", data);
-  } else {
-    // ถ้าไม่ใช่ object ให้ถือว่าเป็น text
-    data = text;
-    messageType = "text";
-    console.log("📝 Received plain text:", data);
-  }
+        data = JSON.parse(text);
+        if (typeof data === "object" && data !== null && !Array.isArray(data)) {
+          // messageType = 'json';
+          console.log("✅ Received JSON:", data);
+        } else {
+          // ถ้าไม่ใช่ object ให้ถือว่าเป็น text
+          data = text;
+          messageType = "text";
+          console.log("📝 Received plain text:", data);
+        }
       } catch {
         data = text;
         messageType = "text";
@@ -69,42 +54,24 @@ if (typeof data === "object" && data !== null && !Array.isArray(data)) {
 
     console.log("Message type:", messageType);
 
-    //แยก instance ของ clientId
+    //รับข้อมูลจาก best script จาก client
     if (data.type === "register") {
       bestScript = data.content;
-      console.log("🚀 ~ ws.on ~ bestScript:", bestScript)
-      // clientId = data.clientId;
-      // privateRooms.set(clientId, ws);
-      // ws.send(
-      //   JSON.stringify({ type: "system", message: `Registered as ${clientId}` })
-      // );
+      console.log("Best Script:", bestScript);
     }
 
+    //จบการสนทนา คำนวณผล score
     if (data.type === "endconversation") {
-      // console.log(history);
       const userContents = history
         .filter((item) => item.role === "user")
         .map((item) => item.content);
-      console.log("🚀 ~ ws.on ~ userContents:", userContents);
-      console.log("end conversation");
+      console.log("User Dialogue:", userContents);
+      console.log("End Conversation");
       const result = await splitSection(userContents, bestScript);
       console.log(result);
       ws.send(JSON.stringify(result));
-      // privateRooms.delete(clientId);
       ws.close();
     }
-    // else {
-    //   if (Buffer.isBuffer(data)) {
-    //     audioChunks.push(data);
-    //     messageType = 'binary';
-    //     console.log('Received binary message:');
-    //   } else {
-    //     messageType = 'text';
-    //     console.log('Received non-binary message:');
-    //   }
-    // }
-
-    // const target = privateRooms.get(clientId);
 
     if (
       ((messageType === "binary" && data.type === "stoptalking") ||
@@ -114,39 +81,33 @@ if (typeof data === "object" && data !== null && !Array.isArray(data)) {
       try {
         let message;
         if (messageType === "binary") {
-          // รับข้อมูล audio
-          const audioBuffer = await Buffer.concat(audioChunks);
+          // รับข้อมูล audio wav
+          const wavBuffer = await Buffer.concat(audioChunks);
           audioChunks = [];
-          console.log("audioBuffer.length", audioBuffer.length);
           try {
-            const wavBuffer = await convertWebmToWavBuffer(audioBuffer); // แปลง WebM เป็น WAV
-            console.log("✅ Converted to WAV Buffer");
-            // speechToText
             const text = await speechToText(wavBuffer);
             message = text;
 
-                      // ==== บันทึกไฟล์ wav ลงเครื่อง server ====
-          const outputDir = path.join(__dirname, "recordings");
-          if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
-          }
-          const filename = `audio_${Date.now()}.wav`;
-          const filepath = path.join(outputDir, filename);
-          fs.writeFileSync(filepath, wavBuffer);
-          console.log("✅ Saved wav file to:", filepath);
-          // ==== จบส่วนบันทึกไฟล์ ====
+            // // ==== บันทึกไฟล์ wav ลงเครื่อง ====
+            // const outputDir = path.join(__dirname, "recordings");
+            // if (!fs.existsSync(outputDir)) {
+            //   fs.mkdirSync(outputDir);
+            // }
+            // const filename = `audio_${Date.now()}.wav`;
+            // const filepath = path.join(outputDir, filename);
+            // fs.writeFileSync(filepath, wavBuffer);
+            // console.log("✅ Saved wav file to:", filepath);
+            // // ==== จบส่วนบันทึกไฟล์ ====
           } catch (err) {
-            console.error("Text-to-speech error:");
+            console.error("Text-to-speech error:", err);
             return;
           }
-
         } else if (messageType === "text") {
           // รับข้อมูล text
           message = data.toString();
-          //  message = typeof data === "string" ? data : String(data);
         }
 
-        console.log("🚀 ~ ws.on ~ message:", message);
+        console.log("Message:", message);
         // เช็คว่า text ว่างหรือ undefined ให้ return ออกไปเลย
         if (!message || message.trim() === "") {
           return;
@@ -172,50 +133,14 @@ if (typeof data === "object" && data !== null && !Array.isArray(data)) {
         }
       } catch (err) {
         console.error("Error processing:", err);
-        ws.send("Error processing your request.");
+        // ws.send("Error processing your request.");
       }
     }
-
-    // const target = privateRooms.get(clientId);
-    // if (target && target.readyState === WebSocket.OPEN) {
-    //   const textMessage = data.toString();
-    //   target.send(textMessage);
-    // } else {
-    //   ws.send(JSON.stringify({ type: 'error', message: 'Target not connected' }));
-    // }
   });
 
   ws.on("close", () => {
-    // if (clientId) {
-    //   privateRooms.delete(clientId);
-    // }
-    // clientId = null;
     audioChunks = [];
     messageType = null;
     history = [];
   });
 });
-
-async function convertWebmToWavBuffer(webmBuffer) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-
-    ffmpeg()
-      .input(Readable.from(webmBuffer))
-      .inputFormat("webm")
-      .audioCodec("pcm_s16le")
-      .audioFrequency(16000)
-      .audioChannels(1)
-      .format("wav")
-      .on("error", (err) => {
-        console.error("FFmpeg error:", err.message);
-        reject(err);
-      })
-      .on("end", () => {
-        const wavBuffer = Buffer.concat(chunks);
-        resolve(wavBuffer);
-      })
-      .pipe()
-      .on("data", (chunk) => chunks.push(chunk));
-  });
-}
