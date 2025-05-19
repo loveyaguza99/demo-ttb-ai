@@ -1,16 +1,16 @@
-const WebSocket = require('ws');
-const { speechToText } = require('./src/speech-to-text');
-const { azureOpenAIChat } = require('./src/openai-chat');
+// const WebSocket = require('ws');
+// const { speechToText } = require('./src/speech-to-text');
+// const { azureOpenAIChat } = require('./src/openai-chat');
 // const { textToSpeech } = require('./src/text-to-speech');
-const { textToSpeech } = require('./src/text-to-speech-streamoutput');
+// const { textToSpeech } = require('./src/text-to-speech-streamoutput');
 const { splitSection } = require('./src/split-section');
-const { compareSimilarText } = require('./src/openai-embedding');
-const { Readable } = require('stream');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-const { PassThrough } = require('stream');
-const fs = require('fs').promises;
-const path = require('path');
+// const { compareSimilarText } = require('./src/openai-embedding');
+// const { Readable } = require('stream');
+// const ffmpeg = require('fluent-ffmpeg');
+// const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+// const { PassThrough } = require('stream');
+// const fs = require('fs').promises;
+// const path = require('path');
 const { testScript1, testScript2, testScript3, testScript4 } = require("./bestScript");
 require('dotenv').config();
 
