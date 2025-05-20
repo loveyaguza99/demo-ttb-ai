@@ -9,6 +9,7 @@ const apiKey = process.env.AZURE_OPENAI_API_KEY;
 const deployment = process.env.AZURE_OPENAI_EMBEDDINGS_MODEL;
 const apiVersion = process.env.AZURE_OPENAI_EMBEDDINGS_API_VERSION;
 const options = { endpoint, apiKey, deployment, apiVersion };
+const { azureOpenAIChat } = require("./openai-chat");
 
 const client = new AzureOpenAI(options);
 
@@ -63,6 +64,12 @@ async function splitSection(textArray, bestScript) {
       }
     }
 
+    // เก็บ textArray ที่ถูกแยก section แล้ว
+    const separatedSections = {};
+    sectionKeys.forEach((key) => {
+      separatedSections[key] = [];
+    });
+
     let currentSectionIndex = 0;
 
     for (const text of textArray) {
@@ -84,6 +91,7 @@ async function splitSection(textArray, bestScript) {
         if (currentSectionIndex === sectionKeys.length - 1) {
           sectionScores[currentSectionKey] += maxCurrent;
           sectionCounts[currentSectionKey] += 1;
+          separatedSections[currentSectionKey].push(text);
           break;
         }
 
@@ -101,6 +109,7 @@ async function splitSection(textArray, bestScript) {
         if (maxCurrent >= maxNext) {
           sectionScores[currentSectionKey] += maxCurrent;
           sectionCounts[currentSectionKey] += 1;
+          separatedSections[currentSectionKey].push(text);
           break;
           // ถ้า  dialogue ที่มี score สูงสุดของ section ปัจจุบันมี score ต่ำกว่า dialogue ที่มี score สูงสุด ของ section ถัดไป ให้ถือว่า dialogue นี้เป็นของ section ถัดไป แล้วแเปลี่ยน section ปัจจุบันเป็น section ถัดไป
         } else {
@@ -119,10 +128,15 @@ async function splitSection(textArray, bestScript) {
       // สมมติ avg อยู่ในช่วง 0-1 ให้แปลงเป็น 1-10 (ถ้า similarity อาจติดลบ ให้ clamp เป็น 0-1 ก่อน)
       const normalized = Math.max(0, Math.min(1, avg));
       const scaled = normalized * 10; // 0 => 1, 1 => 10
-      score[key] = scaled.toFixed(2); // แสดงทศนิยม 2 ตำแหน่ง
+      score[key] = scaled.toFixed(1); // แสดงทศนิยม 1 ตำแหน่ง
     });
 
-    return { score };
+    //summary text
+    const conersationAndScore = "Conversation:" + JSON.stringify(separatedSections);
+    const aiResponse = await azureOpenAIChat({ system_instruction: "คุณคือนักวิเคราะห์บทสนทนามืออาชีพ ทำหน้าที่วิเคราะห์จุดเด่น โดยพิจารณาจากข้อมูล conversation ในภาพรวมอย่างกระชับ ในรูปแบบคำอธิบายที่แสดงเนื้อหาสั้นๆ 1-2 ประโยค ห้ามใช้คำว่า section" }, conersationAndScore, history = []);
+    const textSummary = aiResponse.content;
+
+    return { score, textSummary };
   } catch (error) {
     console.error("Error in splitSection:", error);
     return null;

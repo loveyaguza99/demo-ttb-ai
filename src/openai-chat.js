@@ -8,7 +8,7 @@ const modelName = process.env.AZURE_OPENAI_MODEL;
 const deployment = process.env.AZURE_OPENAI_MODEL;
 const options = { endpoint, apiKey, deployment, apiVersion }
 
-async function azureOpenAIChat(testScript, text, history) {
+async function azureOpenAIChat(testScript, text, history = []) {
 
   const client = new AzureOpenAI(options);
 
