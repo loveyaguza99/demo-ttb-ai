@@ -4,7 +4,7 @@ const sdk = require('microsoft-cognitiveservices-speech-sdk');
 const subscriptionKey = process.env.AZURE_SPEECH_API_KEY
 const serviceRegion = process.env.AZURE_SPEECH_REGION;
 
-function textToSpeech(text, voice = "th-TH-NiwatNeural") {
+function textToSpeech(text, voice = "en-GB-OllieMultilingualNeural") {
   const speechConfig = sdk.SpeechConfig.fromSubscription(subscriptionKey, serviceRegion);
   speechConfig.speechSynthesisOutputFormat = sdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3;
   speechConfig.speechSynthesisVoiceName = voice;
