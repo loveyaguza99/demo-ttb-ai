@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import WebSocket from 'ws';
-import { azureOpenAIChat } from '../services/openai-chat.service.js';
-import { speechToText, textToSpeech } from '../services/speech.service.js';
+import { azureOpenAIChat } from '../utils/openai-chat.js';
+import { speechToText, textToSpeech } from '../utils/speech.js';
 // import { splitSection } from '../../split-section.js';
 // const fs = require("fs");
 // const path = require("path");

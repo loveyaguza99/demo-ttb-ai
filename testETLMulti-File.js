@@ -9,9 +9,9 @@ const path = require("path");
 (async () => {
   // STEP 1: Load documents (Extract)
   const loader = new DirectoryLoader('./docs', {
-    // '.pdf': path => new PDFLoader(path),
+    '.pdf': path => new PDFLoader(path),
     // '.txt': path => new TextLoader(path),
-    '.csv': path => new CSVLoader(path)
+    // '.csv': path => new CSVLoader(path)
   });
 
     const rawDocs = await loader.load()
