@@ -44,12 +44,6 @@ export async function parseAndChunkFile(filePath, originalName) {
   const splitter = new CharacterTextSplitter({
     chunkSize: 1000,
     chunkOverlap: 200,
-    // separators: [
-    //   "\n\n",
-    //   "\n",
-    //   " ",
-    //   ""
-    // ]
   });
   const chunkedDocs = await splitter.splitDocuments(docs);
   return chunkedDocs

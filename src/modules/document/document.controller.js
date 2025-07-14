@@ -30,8 +30,8 @@ export const handleUploadOcr = async (req, res) => {
 
 
     const outputDir = './docs/output';
-    fs.mkdirSync(outputDir, { recursive: true });
-    
+    // fs.mkdirSync(outputDir, { recursive: true });
+
     await convertPdfToImages(filePath, outputDir);
     const prefix = path.basename(filePath, path.extname(filePath));
     console.log("🚀 ~ handleUploadOcr ~ prefix:", prefix)

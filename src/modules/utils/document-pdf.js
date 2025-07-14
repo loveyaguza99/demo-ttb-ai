@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { convert } from 'pdf-poppler';
-import Tesseract from 'tesseract.js';
+// import Tesseract from 'tesseract.js';
 import { createWorker } from 'tesseract.js';
 import pdf from 'pdf-parse';
 
@@ -28,7 +28,6 @@ export async function extractPdf(pdfPath, imgName, outputDir) {
   let allOcrText = '';
   for (let i = 0; i < numberOfPages; i++) {
     const imgPath = `${outputDir}/${imgName}-` + (i + 1) + '.png'
-    // console.log("🚀 ~ extractPdf ~ img:", imgPath)
     const {
       data: { text: ocrText }
     } = await worker.recognize(imgPath);
@@ -44,9 +43,17 @@ export async function extractPdf(pdfPath, imgName, outputDir) {
 }
 
 function subtractTextLayer(ocrText, textLayer) {
+  const textLayerLines = textLayer
+    .split('\n')
+    .map(line => line.trim().toLowerCase())
+    .filter(line => line.length > 0);
+
   const cleaned = ocrText
     .split('\n')
-    .filter(line => !textLayer.includes(line.trim()))
+    .filter(line => {
+      const normLine = line.trim().toLowerCase();
+      return normLine.length > 0 && !textLayerLines.includes(normLine);
+    })
     .join('\n');
 
   return cleaned.trim();
