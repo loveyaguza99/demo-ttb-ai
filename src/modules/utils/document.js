@@ -6,7 +6,7 @@ import { JSONLoader } from "langchain/document_loaders/fs/json";
 import { DocxLoader } from "@langchain/community/document_loaders/fs/docx";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import { PPTXLoader } from "@langchain/community/document_loaders/fs/pptx";
-import { CharacterTextSplitter } from "langchain/text_splitter";
+import { RecursiveCharacterTextSplitter  } from "langchain/text_splitter";
 // import { OpenAIWhisperAudio } from "@langchain/community/document_loaders/fs/openai_whisper_audio";
 
 export function uploadSingleFile(fieldName) {
@@ -41,9 +41,10 @@ export async function parseAndChunkFile(filePath, originalName) {
   const docs = await loader.load();
 
   // 🔹 ทำ Chunk
-  const splitter = new CharacterTextSplitter({
+  const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
     chunkOverlap: 200,
+    separators: ["\n\n", "\n", " ", ""],
   });
   const chunkedDocs = await splitter.splitDocuments(docs);
   return chunkedDocs
