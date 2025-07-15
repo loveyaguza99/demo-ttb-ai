@@ -36,7 +36,7 @@ export async function extractPdf(pdfPath, imgName, outputDir) {
   }
 
   const final = subtractTextLayer(allOcrText, data.text);
-  console.log("🚀 ~ extractPdf ~ final:", final)
+  // console.log("🚀 ~ extractPdf ~ final:", final)
   fs.writeFileSync(`${outputDir}/output_full.txt`, final.trim(), 'utf8');
   await worker.terminate();
   return final

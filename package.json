@@ -11,8 +11,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@azure/identity": "^4.10.2",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@huggingface/transformers": "^3.5.0",
+    "@langchain/azure-cosmosdb": "^0.2.8",
     "@langchain/community": "^0.3.48",
     "@langchain/core": "^0.3.62",
     "@langchain/langgraph": "^0.3.6",

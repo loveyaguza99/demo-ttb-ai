@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import app from "./app.js";
