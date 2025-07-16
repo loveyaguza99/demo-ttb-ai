@@ -22,7 +22,6 @@ export async function extractPdf(pdfPath, imgName, outputDir) {
   const buffer = fs.readFileSync(pdfPath);
   const data = await pdf(buffer);
   const numberOfPages = data.numpages;
-  // console.log("🚀 ~ extractPdf ~ data:", data)
 
   const worker = await createWorker('tha+eng');
   let allOcrText = '';
@@ -36,7 +35,6 @@ export async function extractPdf(pdfPath, imgName, outputDir) {
   }
 
   const final = subtractTextLayer(allOcrText, data.text);
-  // console.log("🚀 ~ extractPdf ~ final:", final)
   fs.writeFileSync(`${outputDir}/output_full.txt`, final.trim(), 'utf8');
   await worker.terminate();
   return final

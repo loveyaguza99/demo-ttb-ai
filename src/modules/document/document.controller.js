@@ -62,16 +62,21 @@ export const handleSimilaritySearch = async (req, res) => {
   try {
     const { query } = req.body;
     const store = await initializedVectorStore()
-    console.log("🚀 ~ handleSimilaritySearch ~ store:", store)
+    // const filter = { source: { $in: ["uploads\\63e588aca321af96a23ae2bf5d7a2209"] } };
+    // const filter = { "metadata.uploadedBy": "Ko" };
+    const filter = { "uploadedBy": "Ko" };
     const resultDocuments = await store.similaritySearch(
-      query
+      query,
+      10,
+      filter
     );
     const results = resultDocuments.map(doc => ({
       pageContent: doc.pageContent,
+      metadata: doc.metadata,
     }));
     res.json({ result: results });
   } catch (err) {
-    console.error("❌ Upload error:", err);
-    res.status(500).json({ error: "Upload failed" });
+    console.error("❌ Search error:", err);
+    res.status(500).json({ error: "Search failed" });
   }
 };

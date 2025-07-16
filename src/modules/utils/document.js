@@ -40,12 +40,26 @@ export async function parseAndChunkFile(filePath, originalName) {
 
   const docs = await loader.load();
 
-  // 🔹 ทำ Chunk
+  // ทำ Chunk
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
     chunkOverlap: 200,
     separators: ["\n\n", "\n", " ", ""],
   });
-  const chunkedDocs = await splitter.splitDocuments(docs);
+  let chunkedDocs = await splitter.splitDocuments(docs);
+
+  const uploadedBy = 'Ko';
+  const createdAt = new Date().toISOString();
+  if (uploadedBy) {
+    chunkedDocs = chunkedDocs.map(doc => ({
+      ...doc,
+      metadata: {
+        ...doc.metadata,
+        uploadedBy, // เพิ่ม field นี้
+        createdAt,
+      }
+    }));
+  }
+
   return chunkedDocs
 }

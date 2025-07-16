@@ -1,9 +1,8 @@
 import express from "express";
+import { handleChat } from './chat.controller.js';
 
 const router = express.Router();
 
-router.post("/",  async (req, res) => {
-  res.json({ status: "queued" });
-});
+router.post("/chat", handleChat);
 
 export default router;
