@@ -3,6 +3,6 @@ import { handleChat } from './chat.controller.js';
 
 const router = express.Router();
 
-router.post("/chat", handleChat);
+router.post("/", handleChat);
 
 export default router;
