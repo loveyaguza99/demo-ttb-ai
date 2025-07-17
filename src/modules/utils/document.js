@@ -6,7 +6,8 @@ import { JSONLoader } from "langchain/document_loaders/fs/json";
 import { DocxLoader } from "@langchain/community/document_loaders/fs/docx";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import { PPTXLoader } from "@langchain/community/document_loaders/fs/pptx";
-import { RecursiveCharacterTextSplitter  } from "langchain/text_splitter";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import Tesseract from 'tesseract.js';
 // import { OpenAIWhisperAudio } from "@langchain/community/document_loaders/fs/openai_whisper_audio";
 
 export function uploadSingleFile(fieldName) {
@@ -21,6 +22,17 @@ export function uploadSingleFile(fieldName) {
   };
 }
 
+function ImageLoader(filePath) {
+  return {
+    load: async () => {
+      const {
+        data: { text: ocrText }
+      } = await Tesseract.recognize(filePath, 'tha+eng');
+      return [{ pageContent: ocrText, metadata: { source: filePath } }];
+    }
+  };
+}
+
 export async function parseAndChunkFile(filePath, originalName) {
   const lowerName = originalName.toLowerCase();
   let loader
@@ -31,6 +43,7 @@ export async function parseAndChunkFile(filePath, originalName) {
   else if (lowerName.endsWith(".docx")) loader = new DocxLoader(filePath);
   else if (lowerName.endsWith(".txt")) loader = new TextLoader(filePath);
   else if (lowerName.endsWith(".pptx")) loader = new PPTXLoader(filePath);
+  else if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".png") || lowerName.endsWith(".webp")) loader = new ImageLoader(filePath);
   // else if (lowerName.endsWith(".wav")) loader = new OpenAIWhisperAudio(filePath, {
   //   transcriptionCreateParams: {
   //     language: "en",

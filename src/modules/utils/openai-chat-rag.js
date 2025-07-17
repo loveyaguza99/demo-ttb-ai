@@ -14,15 +14,16 @@ const model = new AzureChatOpenAI({
   maxTokens: 500,
   // timeout: 2,
   maxRetries: 2,
-  // other params...
+  verbose: true,
 });
 
 const questionAnsweringPrompt = ChatPromptTemplate.fromMessages([
   [
     "system",
-    "Answer the user's questions based on the below context:\n\n{context}",
+    "ตอบคำถามของผู้ใช้ตามบริบทด้านล่าง:\n\n{context}",
+    // "Answer the user's questions based on the below context:\n\n{context}",
   ],
-  ["human", `${prompt}`],
+  ["human", "{input}"],
 ]);
 
 const combineDocsChain = await createStuffDocumentsChain({
@@ -34,10 +35,10 @@ const chain = await createRetrievalChain({
   retriever: store.asRetriever(),
   combineDocsChain,
 });
-console.log("🚀 ~ azureOpenAIChat ~ chain:", chain)
+// console.log("🚀 ~ azureOpenAIChat ~ chain:", chain)
 
 const res = await chain.invoke({
-  input: `${prompt}`,
+  input: prompt,
 });
 
 console.log("🚀 ~ azureOpenAIChat ~ res:", res)
