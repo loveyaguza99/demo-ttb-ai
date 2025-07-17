@@ -1,11 +1,12 @@
-import { initializedVectorStore } from "../utils/vector-store.js";
+import { initializedVectorStore, initializedChatHistoryVectorStore } from "../utils/vector-store.js";
 import { azureOpenAIChat } from "../utils/openai-chat-rag.js";
 
 export const handleChat = async (req, res) => {
   try {
     const { prompt } = req.body;
-    const store = await initializedVectorStore()
-    const results = await azureOpenAIChat(prompt, store);
+    const documentStore = await initializedVectorStore()
+    const chatHistoryStore = await initializedChatHistoryVectorStore()
+    const results = await azureOpenAIChat(prompt, documentStore, chatHistoryStore);
 
     res.json({ result: results });
   } catch (err) {
