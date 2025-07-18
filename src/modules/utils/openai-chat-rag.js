@@ -3,21 +3,23 @@ import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 // import { VectorStoreRetrieverMemory } from "langchain/memory";
-import { MongoDBChatMessageHistory } from "@langchain/mongodb";
 
-export async function azureOpenAIChat(prompt, documentStore, chatHistoryStore) {
+export async function azureOpenAIChat(prompt, documentStore/*, chatHistoryStore */) {
 
   const model = new AzureChatOpenAI({
-    azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
-    azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_API_ENDPOINT,
-    deploymentName: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
-    openAIApiVersion: process.env.AZURE_OPENAI_API_VERSION,
-    temperature: 1,
+    model: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
+    // azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
+    // azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_API_ENDPOINT,
+    // azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_API_ENDPOINT,
+    // azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
+    // azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION,
+    temperature: 0,
     maxTokens: 500,
     // timeout: 2,
     maxRetries: 2,
     verbose: true,
   });
+  console.log("🚀 ~ azureOpenAIChat ~ model:", model)
 
   // const filter = {userId: {"$in": ["testko1"]}}
   // const filter = { userId: { $in: ["testko2"] } };

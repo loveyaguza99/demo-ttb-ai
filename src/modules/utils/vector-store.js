@@ -43,25 +43,25 @@ export async function initializedVectorStore() {
   return store;
 }
 
-export async function initializedChatHistoryVectorStore() {
-  await client.connect();
+// export async function initializedChatHistoryVectorStore() {
+//   await client.connect();
 
-  const store = new AzureCosmosDBMongoDBVectorStore(
-    embeddings,
-    {
-      client,
-      databaseName: "test",
-      collectionName: "chat_history",
-      indexOptions: {
-        numLists: 100,
-        dimensions: 1536,
-        similarity: AzureCosmosDBMongoDBSimilarityType.COS,
-      },
-    }
-  );
-  await store.initialize();
-  return store;
-}
+//   const store = new AzureCosmosDBMongoDBVectorStore(
+//     embeddings,
+//     {
+//       client,
+//       databaseName: "test",
+//       collectionName: "chat_history",
+//       indexOptions: {
+//         numLists: 100,
+//         dimensions: 1536,
+//         similarity: AzureCosmosDBMongoDBSimilarityType.COS,
+//       },
+//     }
+//   );
+//   await store.initialize();
+//   return store;
+// }
 
 // Create Azure Cosmos DB for MongoDB vCore vector store
 export async function saveToVectorStore(documents) {
