@@ -64,7 +64,8 @@ export const handleSimilaritySearch = async (req, res) => {
     const store = await initializedVectorStore()
     // const filter = { source: { $in: ["uploads\\63e588aca321af96a23ae2bf5d7a2209"] } };
     // const filter = { "metadata.uploadedBy": "Ko" };
-    const filter = { "uploadedBy": "Ko" };
+    const filter = { uploadedBy: "Ko" };
+    // const filter = { uploadedBy: { "$eq": "Ko" } };
     const resultDocuments = await store.similaritySearch(
       query,
       10,

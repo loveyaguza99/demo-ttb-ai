@@ -2,9 +2,9 @@ import { AzureChatOpenAI } from "@langchain/openai";
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
-// import { VectorStoreRetrieverMemory } from "langchain/memory";
+import { VectorStoreRetrieverMemory } from "langchain/memory";
 
-export async function azureOpenAIChat(prompt, documentStore) {
+export async function azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStore) {
 
   const model = new AzureChatOpenAI({
     model: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
@@ -16,29 +16,23 @@ export async function azureOpenAIChat(prompt, documentStore) {
   });
   console.log("🚀 ~ azureOpenAIChat ~ model:", model)
 
-  // const filter = {userId: {"$in": ["testko1"]}}
-  // const filter = { userId: { $in: ["testko2"] } };
-  // const filter = { userId: { "$eq": "testko1" } };
-  // const filter = { "metadata.userId": { $eq: "testko1" } };
-  // const filter = { "metadata.userId": { $in: ["testko1"] } };
-  // const filter = {
-  //   must: [{ key: "metadata.userId", match: { value: "testko1" } }],
-  // };
+  const filter = {userId: {"$in": ["testko1"]}}
+  // const filter = { userId: { "$eq": "testko1" } };],
 
-  // const memory = new VectorStoreRetrieverMemory({
-  //   vectorStoreRetriever: chatHistoryStore.asRetriever(3), // topK = 1
-  //   // vectorStoreRetriever: chatHistoryStore.asRetriever({ k: 3, filter: filter }), // topK = 1
-  //   memoryKey: "history",
-  //   metadata: { userId: "testko1", sessionId: "testko1", createdAt: new Date().toISOString() },
-  //   returnDocs: true,
-  // });
-  // console.log("🚀 ~ azureOpenAIChat ~ memory:", memory)
+  const memory = new VectorStoreRetrieverMemory({
+    // vectorStoreRetriever: chatHistoryStore.asRetriever(3), // topK = 1
+    vectorStoreRetriever: chatHistoryStore.asRetriever({ k: 3, filter: { userId: "testko1" } }), // topK = 1
+    memoryKey: "history",
+    metadata: { userId: "testko3", sessionId: "testko3", createdAt: new Date().toISOString() },
+    returnDocs: true,
+  });
+  console.log("🚀 ~ azureOpenAIChat ~ memory:", memory)
 
-  // const history = await memory.loadMemoryVariables({
-  //   prompt: prompt,
-  // });
-  // console.log("🚀 ~ azureOpenAIChat ~ history:", history)
-  // return history
+  const history = await memory.loadMemoryVariables({
+    prompt: prompt,
+  });
+  console.log("🚀 ~ azureOpenAIChat ~ history:", history)
+  return history
 
   const questionAnsweringPrompt = ChatPromptTemplate.fromMessages([
     [
@@ -62,14 +56,14 @@ export async function azureOpenAIChat(prompt, documentStore) {
   });
 
   const res = await chain.invoke({
-    // chat_history: history.history,
+    chat_history: history.history,
     input: prompt,
   });
 
-  // await memory.saveContext(
-  //   { input: prompt },
-  //   { output: res.answer },
-  // );
+  await memory.saveContext(
+    { input: prompt },
+    { output: res.answer },
+  );
 
   console.log("🚀 ~ azureOpenAIChat ~ res:", res)
   return res.answer;
