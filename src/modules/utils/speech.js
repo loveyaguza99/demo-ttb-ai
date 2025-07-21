@@ -1,37 +1,27 @@
-// const fs = require("fs");
-import sdk from "microsoft-cognitiveservices-speech-sdk";
-// const sdk = require("microsoft-cognitiveservices-speech-sdk");
+const sdk = require("microsoft-cognitiveservices-speech-sdk");
 
-// This example requires environment variables named "SPEECH_KEY" and "SPEECH_REGION"
-var subscriptionKey = "8oX4YqhNHNpuEaQT6bvI5AaSl6iDEWGZwuM6r4tT35VusQiRLtD7JQQJ99BDACqBBLyXJ3w3AAAYACOGugEU";
-var serviceRegion = "southeastasia"; // e.g., "westus"
-var filename = "-101071.wav";
+const subscriptionKey = process.env.SPEECH_KEY || "8oX4YqhNHNpuEaQT6bvI5AaSl6iDEWGZwuM6r4tT35VusQiRLtD7JQQJ99BDACqBBLyXJ3w3AAAYACOGugEU"; // เปลี่ยนเป็นตัวแปร env จริงๆ
+const serviceRegion = "southeastasia";
 const speechConfig = sdk.SpeechConfig.fromSubscription(subscriptionKey, serviceRegion);
 speechConfig.speechRecognitionLanguage = "th-TH";
+speechConfig.speechSynthesisVoiceName = "th-TH-NiwatNeural"; // เสียงผู้ชายไทย (เปลี่ยนได้ตามต้องการ)
 
-export async function speechToText(buffer) {
+async function speechToText(buffer) {
+  // สร้าง push stream สำหรับ audio
+  const pushStream = sdk.AudioInputStream.createPushStream();
+  pushStream.write(buffer);
+  pushStream.close();
 
-      // Create push stream
-      const pushStream = sdk.AudioInputStream.createPushStream();
-    
-      // Push audio data to the stream
-      pushStream.write(buffer);
-      pushStream.close();
-
-  // const audioData = new Uint8Array(buffer); // ✅ แปลง Buffer เป็น Uint8Array
-  const audioConfig = sdk.AudioConfig.fromStreamInput(pushStream); // ✅ ใช้ Uint8Array
-  // let audioConfig = sdk.AudioConfig.fromWavFileInput(fs.readFileSync(buffer));
+  const audioConfig = sdk.AudioConfig.fromStreamInput(pushStream);
   const speechRecognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
 
   return new Promise((resolve, reject) => {
     speechRecognizer.recognizeOnceAsync(
-      function (result) {
-        // console.log(result.privText);
+      result => {
         speechRecognizer.close();
         resolve(result.privText);
       },
-      function (err) {
-        console.trace("err - " + err);
+      err => {
         speechRecognizer.close();
         reject(err);
       }
@@ -39,40 +29,39 @@ export async function speechToText(buffer) {
   });
 }
 
+async function textToSpeech(text) {
+  return new Promise((resolve, reject) => {
+    // สร้าง audioConfig แบบ push stream เพื่อเก็บข้อมูลเสียง output
+    const pushStream = sdk.AudioOutputStream.createPullStream();
+    const audioConfig = sdk.AudioConfig.fromStreamOutput(pushStream);
+    const synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
 
-// now create the audio-config pointing to our stream and
-// the speech config specifying the language.
-var audioConfig = sdk.AudioConfig.fromAudioFileOutput(filename);
+    const chunks = [];
+    // เก็บ data chunk ใน pushStream (ในกรณีนี้ต้องดัก event)
+    // แต่ sdk ไม่มี event ใน pullStream, เราอาจใช้ pushStream แทน
+    // หรือปรับให้เก็บไฟล์ หรือแปลงเป็น Buffer ในทางอื่น
+    // ที่นี่จะใช้วิธีง่ายๆ คือใช้ callback ของ speakTextAsync แล้ว resolve
 
-speechConfig.speechSynthesisVoiceName = "th-TH-NiwatNeural";  // ตัวอย่างเสียงภาษาไทยหญิง
-
-// create the speech synthesizer.
-var synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
-
-// var rl = readline.createInterface({
-//   input: process.stdin,
-//   output: process.stdout
-// });
-
-export async function textToSpeech(text) {
-// rl.question("Type some text that you want to speak...\n> ", function (text) {
-//   rl.close();
-  // start the synthesizer and wait for a result.
-  synthesizer.speakTextAsync(text,
-      function (result) {
-    if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-      console.log("synthesis finished.");
-    } else {
-      console.error("Speech synthesis canceled, " + result.errorDetails +
-          "\nDid you update the subscription info?");
-    }
-    synthesizer.close();
-    synthesizer = undefined;
-  },
-      function (err) {
-    console.trace("err - " + err);
-    synthesizer.close();
-    synthesizer = undefined;
+    synthesizer.speakTextAsync(
+      text,
+      result => {
+        if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+          synthesizer.close();
+          resolve(result.audioData); // audioData เป็น Uint8Array
+        } else {
+          synthesizer.close();
+          reject(new Error("Speech synthesis canceled: " + result.errorDetails));
+        }
+      },
+      err => {
+        synthesizer.close();
+        reject(err);
+      }
+    );
   });
-  console.log("Now synthesizing to: " + filename);
 }
+
+module.exports = {
+  speechToText,
+  textToSpeech,
+};

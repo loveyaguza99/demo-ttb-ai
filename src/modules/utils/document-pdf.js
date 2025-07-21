@@ -1,11 +1,11 @@
-import fs from 'fs';
-import path from 'path';
-import { convert } from 'pdf-poppler';
-// import Tesseract from 'tesseract.js';
-import { createWorker } from 'tesseract.js';
-import pdf from 'pdf-parse';
+const fs = require('fs');
+const path = require('path');
+const { convert } = require('pdf-poppler');
+// const Tesseract = require('tesseract.js');
+const { createWorker } = require('tesseract.js');
+const pdf = require('pdf-parse');
 
-export async function convertPdfToImages(pdfPath, outputDir) {
+async function convertPdfToImages(pdfPath, outputDir) {
   const opts = {
     format: 'png',
     out_dir: outputDir,
@@ -18,7 +18,7 @@ export async function convertPdfToImages(pdfPath, outputDir) {
   await convert(pdfPath, opts);
 }
 
-export async function extractPdf(pdfPath, imgName, outputDir) {
+async function extractPdf(pdfPath, imgName, outputDir) {
   const buffer = fs.readFileSync(pdfPath);
   const data = await pdf(buffer);
   const numberOfPages = data.numpages;
@@ -26,7 +26,7 @@ export async function extractPdf(pdfPath, imgName, outputDir) {
   const worker = await createWorker('tha+eng');
   let allOcrText = '';
   for (let i = 0; i < numberOfPages; i++) {
-    const imgPath = `${outputDir}/${imgName}-` + (i + 1) + '.png'
+    const imgPath = `${outputDir}/${imgName}-` + (i + 1) + '.png';
     const {
       data: { text: ocrText }
     } = await worker.recognize(imgPath);
@@ -37,7 +37,7 @@ export async function extractPdf(pdfPath, imgName, outputDir) {
   const final = subtractTextLayer(allOcrText, data.text);
   fs.writeFileSync(`${outputDir}/output_full.txt`, final.trim(), 'utf8');
   await worker.terminate();
-  return final
+  return final;
 }
 
 function subtractTextLayer(ocrText, textLayer) {
@@ -56,3 +56,8 @@ function subtractTextLayer(ocrText, textLayer) {
 
   return cleaned.trim();
 }
+
+module.exports = {
+  convertPdfToImages,
+  extractPdf
+};

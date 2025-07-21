@@ -1,17 +1,15 @@
-import dotenv from 'dotenv';
-dotenv.config();
-import {
+const {
   AzureCosmosDBMongoDBVectorStore,
   AzureCosmosDBMongoDBSimilarityType,
-} from "@langchain/azure-cosmosdb";
-import { ChatOpenAI, AzureOpenAIEmbeddings } from "@langchain/openai";
-import { MongoClient } from 'mongodb';
-import { MultiVectorRetriever } from "langchain/retrievers/multi_vector";
+} = require("@langchain/azure-cosmosdb");
+const { ChatOpenAI, AzureOpenAIEmbeddings } = require("@langchain/openai");
+const { MongoClient } = require("mongodb");
+const { MultiVectorRetriever } = require("langchain/retrievers/multi_vector");
 
 const mongoOptions = {
-  maxPoolSize: 20,      // จำนวน connection สูงสุดใน pool
-  minPoolSize: 2,       // จำนวน connection ต่ำสุดใน pool
-  waitQueueTimeoutMS: 10000, // เวลารอคิว (ms)
+  maxPoolSize: 20,
+  minPoolSize: 2,
+  waitQueueTimeoutMS: 10000,
 };
 
 const client = new MongoClient(process.env.AZURE_COSMOSDB_MONGODB_CONNECTION_STRING, mongoOptions);
@@ -23,7 +21,7 @@ const embeddings = new AzureOpenAIEmbeddings({
   azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_EMBEDDINGS_MODEL,
 });
 
-export async function initializedVectorStore() {
+async function initializedVectorStore() {
   await client.connect();
 
   const store = new AzureCosmosDBMongoDBVectorStore(
@@ -43,7 +41,7 @@ export async function initializedVectorStore() {
   return store;
 }
 
-export async function initializedChatHistoryVectorStore() {
+async function initializedChatHistoryVectorStore() {
   await client.connect();
 
   const store = new AzureCosmosDBMongoDBVectorStore(
@@ -63,13 +61,10 @@ export async function initializedChatHistoryVectorStore() {
   return store;
 }
 
-// Create Azure Cosmos DB for MongoDB vCore vector store
-export async function saveToVectorStore(documents) {
-  // console.log("🚀 ~ saveToVectorStore ~ documents:", documents)
+async function saveToVectorStore(documents) {
   const store = await AzureCosmosDBMongoDBVectorStore.fromDocuments(
     documents,
     embeddings,
-    // new OpenAIEmbeddings(),
     {
       connectionString: process.env.AZURE_COSMOSDB_MONGODB_CONNECTION_STRING,
       databaseName: "test",
@@ -84,10 +79,8 @@ export async function saveToVectorStore(documents) {
   return store;
 }
 
-// Performs a similarity search
-// const resultDocuments = await store.similaritySearch(
-//   "What did the president say about Ketanji Brown Jackson?"
-// );
-
-// console.log("Similarity search results:");
-// console.log(resultDocuments[0].pageContent);
+module.exports = {
+  initializedVectorStore,
+  initializedChatHistoryVectorStore,
+  saveToVectorStore,
+};
