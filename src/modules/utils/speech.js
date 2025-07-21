@@ -1,6 +1,6 @@
 const sdk = require("microsoft-cognitiveservices-speech-sdk");
 
-const subscriptionKey = process.env.SPEECH_KEY || "8oX4YqhNHNpuEaQT6bvI5AaSl6iDEWGZwuM6r4tT35VusQiRLtD7JQQJ99BDACqBBLyXJ3w3AAAYACOGugEU"; // เปลี่ยนเป็นตัวแปร env จริงๆ
+const subscriptionKey = process.env.AZURE_SPEECH_API_KEY;
 const serviceRegion = "southeastasia";
 const speechConfig = sdk.SpeechConfig.fromSubscription(subscriptionKey, serviceRegion);
 speechConfig.speechRecognitionLanguage = "th-TH";
