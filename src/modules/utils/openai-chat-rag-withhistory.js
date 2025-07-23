@@ -7,8 +7,8 @@ const { VectorStoreRetrieverMemory } = require("langchain/memory");
 async function azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStore, userId, sessionId) {
   const model = new AzureChatOpenAI({
     model: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
-    temperature: 0,
-    maxTokens: 500,
+    temperature: 1,
+    maxTokens: 2000,
     maxRetries: 2,
     verbose: true,
   });
@@ -23,7 +23,6 @@ async function azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStor
     }),
     memoryKey: "history",
     metadata: { userId: userId, sessionId: sessionId, createdAt: new Date().toISOString() },
-    returnDocs: true,
   });
   console.log("🚀 ~ azureOpenAIChatWithHistory ~ memory:", memory);
 
@@ -34,6 +33,7 @@ async function azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStor
   const questionAnsweringPrompt = ChatPromptTemplate.fromMessages([
     [
       "system",
+      "ประวัติการสนทนา:\n\n{chat_history}\n\n\n\n" +
       "ตอบคำถามของผู้ใช้โดยใช้ข้อมูลจากด้านล่างที่เกี่ยวข้องกับคำถามเท่านั้น:\n\n{context}",
     ],
     ["human", "{input}"],
