@@ -54,7 +54,7 @@ const handleSimilaritySearch = async (req, res) => {
 
     const filter = { uploadedBy: "Ko" };
 
-    const resultDocuments = await store.similaritySearch(query, 10, filter);
+    const resultDocuments = await store.similaritySearch(query, 10, { uploadedBy: "testko1" });
 
     const results = resultDocuments.map(doc => ({
       pageContent: doc.pageContent,

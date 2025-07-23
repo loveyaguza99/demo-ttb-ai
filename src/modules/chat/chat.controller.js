@@ -20,7 +20,10 @@ const handleChatWithHistory = async (req, res) => {
     const { prompt } = req.body;
     const documentStore = await initializedVectorStore();
     const chatHistoryStore = await initializedChatHistoryVectorStore();
-    const results = await azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStore);
+
+    const userId = "test01"
+    const sessionId = "test01"
+    const results = await azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStore, userId, sessionId);
 
     res.json({ result: results });
   } catch (err) {

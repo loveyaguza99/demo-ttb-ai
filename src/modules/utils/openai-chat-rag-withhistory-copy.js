@@ -4,32 +4,39 @@ const { createStuffDocumentsChain } = require("langchain/chains/combine_document
 const { ChatPromptTemplate } = require("@langchain/core/prompts");
 const { VectorStoreRetrieverMemory } = require("langchain/memory");
 
-async function azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStore, userId, sessionId) {
+async function azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStore) {
   const model = new AzureChatOpenAI({
     model: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
     temperature: 0,
     maxTokens: 500,
+    // timeout: 2,
     maxRetries: 2,
     verbose: true,
   });
+  // console.log("🚀 ~ azureOpenAIChatWithHistory ~ model:", model);
+
+  // ตัวอย่าง filter สำหรับ memory retriever
+  const filter = { userId: { $in: ["testko1"] } };
+  const currentUserId = "testko1";
+  const currentSessionId = "testko1";
 
   const memory = new VectorStoreRetrieverMemory({
     vectorStoreRetriever: chatHistoryStore.asRetriever({
       k: 3,
       filter: {
-        userId: userId,
-        sessionId: sessionId
+        userId: "testko1",
+        sessionId: "testko1"
       }
     }),
     memoryKey: "history",
-    metadata: { userId: userId, sessionId: sessionId, createdAt: new Date().toISOString() },
+    metadata: { userId: currentUserId, sessionId: currentSessionId, createdAt: new Date().toISOString() },
     returnDocs: true,
   });
   console.log("🚀 ~ azureOpenAIChatWithHistory ~ memory:", memory);
 
-  const history = await memory.loadMemoryVariables({ input: prompt });
+  const history = await memory.loadMemoryVariables({ prompt });
   // console.log("🚀 ~ azureOpenAIChatWithHistory ~ history:", history);
-  // return history;
+  return history;
 
   const questionAnsweringPrompt = ChatPromptTemplate.fromMessages([
     [
@@ -53,13 +60,13 @@ async function azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStor
     chat_history: history.history,
     input: prompt,
   });
-  console.log("🚀 ~ azureOpenAIChatWithHistory ~ res:", res)
 
   await memory.saveContext(
     { input: prompt },
     { output: res.answer },
   );
 
+  console.log("🚀 ~ azureOpenAIChatWithHistory ~ res:", res);
   return res.answer;
 }
 
