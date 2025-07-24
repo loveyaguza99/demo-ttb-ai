@@ -1,10 +1,6 @@
-const {
-  AzureCosmosDBMongoDBVectorStore,
-  AzureCosmosDBMongoDBSimilarityType,
-} = require("@langchain/azure-cosmosdb");
-const { ChatOpenAI, AzureOpenAIEmbeddings } = require("@langchain/openai");
+const { AzureOpenAIEmbeddings } = require("@langchain/openai");
 const { MongoClient } = require("mongodb");
-const { MultiVectorRetriever } = require("langchain/retrievers/multi_vector");
+const { MongoDBAtlasVectorSearch } = require("@langchain/mongodb");
 
 const mongoOptions = {
   maxPoolSize: 20,
@@ -12,7 +8,7 @@ const mongoOptions = {
   waitQueueTimeoutMS: 10000,
 };
 
-const client = new MongoClient(process.env.AZURE_COSMOSDB_MONGODB_CONNECTION_STRING, mongoOptions);
+const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING, mongoOptions);
 
 const embeddings = new AzureOpenAIEmbeddings({
   azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
@@ -27,37 +23,16 @@ async function initializedVectorStore() {
 
   const collectionName = "documents"
   const collection = db.collection(collectionName);
-  const count = await collection.countDocuments({});
 
-  const indexName = "vectorSearchIndex";
-  const indexes = await collection.indexes();
-  console.log("🚀 ~ initializedVectorStore ~ indexes:", indexes)
-  // const vectorIndex = indexes.find(idx => idx.name === indexName);
-  // const currentNumLists = vectorIndex.cosmosSearchOptions?.numLists;
-  // const newNumLists = recommendedNumLists(count)
-
-  // if (newNumLists !== currentNumLists) {
-  //   await collection.dropIndex(indexName);
-  //   console.log("updated index");
-  // }
-
-  const store = new AzureCosmosDBMongoDBVectorStore(
+  const store = new MongoDBAtlasVectorSearch(
     embeddings,
     {
-      client,
-      databaseName: "test",
-      collectionName: collectionName,
-      indexOptions: {
-        // numLists: newNumLists,
-        numLists: 20,
-        dimensions: 1536,
-        similarity: AzureCosmosDBMongoDBSimilarityType.COS,
-      },
+      collection,
+      indexName: "vectorSearchIndex",
+      textKey: "textContent",
+      embeddingKey: "vectorContent",
     }
   );
-  await store.initialize();
-  // await collection.createIndex({ uploadedBy: 1 });
-
   return store;
 }
 
@@ -68,51 +43,51 @@ async function initializedChatHistoryVectorStore() {
   const collection = db.collection(collectionName);
   const count = await collection.countDocuments({});
 
-  const store = new AzureCosmosDBMongoDBVectorStore(
+  const store = new MongoDBAtlasVectorSearch(
     embeddings,
     {
       client,
       databaseName: "test",
       collectionName: collectionName,
-      indexOptions: {
-        // numLists: recommendedNumLists(count),
-        numLists: 20,
-        dimensions: 1536,
-        similarity: AzureCosmosDBMongoDBSimilarityType.COS,
-      },
     }
   );
-  // await store.initialize();
-  // await collection.createIndex({ userId: 1 });
-  // await collection.createIndex({ sessionId: 1 });
-
   return store;
 }
 
 async function saveToVectorStore(documents) {
-  const store = await AzureCosmosDBMongoDBVectorStore.fromDocuments(
+  await client.connect();
+  const db = client.db("test");
+  const collectionName = "documents"
+  const collection = db.collection(collectionName);
+  const store = await MongoDBAtlasVectorSearch.fromDocuments(
     documents,
     embeddings,
     {
-      connectionString: process.env.AZURE_COSMOSDB_MONGODB_CONNECTION_STRING,
-      databaseName: "test",
-      collectionName: "documents",
-      // indexOptions: {
-      //   numLists: 100,
-      //   dimensions: 1536,
-      //   similarity: AzureCosmosDBMongoDBSimilarityType.COS,
-      // },
+      collection,
+      indexName: "vectorSearchIndex",
+      textKey: "textContent",
+      embeddingKey: "vectorContent",
     }
   );
   return store;
 }
 
-function recommendedNumLists(nVectors) {
-  return Math.max(10, Math.round(Math.sqrt(nVectors)));
+async function memory(userId, sessionId) {
+  await client.connect();
+  const collection = client.db("test").collection("chat_history");
+
+  const memory = new BufferMemory({
+    chatHistory: new MongoDBChatMessageHistory({
+      collection,
+      sessionId,
+    }),
+  });
+  return memory;
 }
 
 module.exports = {
   initializedVectorStore,
   initializedChatHistoryVectorStore,
   saveToVectorStore,
+  memory
 };

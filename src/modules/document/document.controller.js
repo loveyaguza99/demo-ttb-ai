@@ -52,9 +52,9 @@ const handleSimilaritySearch = async (req, res) => {
     const { query } = req.body;
     const store = await initializedVectorStore();
 
-    const filter = { uploadedBy: "Ko" };
+    const filter = { preFilter: { uploadedBy: "Ko" } }
 
-    const resultDocuments = await store.similaritySearch(query, 10, { uploadedBy: "testko1" });
+    const resultDocuments = await store.similaritySearch(query, 10, filter);
 
     const results = resultDocuments.map(doc => ({
       pageContent: doc.pageContent,

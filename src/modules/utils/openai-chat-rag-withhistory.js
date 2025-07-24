@@ -1,10 +1,27 @@
+const { MongoClient, ObjectId } = require("mongodb");
+const { BufferMemory } = require("langchain/memory");
+const { ConversationChain } = require("langchain/chains");
+const { MongoDBChatMessageHistory } = require("@langchain/mongodb");
 const { AzureChatOpenAI } = require("@langchain/openai");
-const { createRetrievalChain } = require("langchain/chains/retrieval");
-const { createStuffDocumentsChain } = require("langchain/chains/combine_documents");
-const { ChatPromptTemplate } = require("@langchain/core/prompts");
-const { VectorStoreRetrieverMemory } = require("langchain/memory");
+
+const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING, {
+  driverInfo: { name: "langchainjs" },
+});
 
 async function azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStore, userId, sessionId) {
+  await client.connect();
+  const collection = client.db("test").collection("chat_history");
+
+  // generate a new sessionId string
+  // const sessionId = new ObjectId().toString();
+
+  const memory = new BufferMemory({
+    chatHistory: new MongoDBChatMessageHistory({
+      collection,
+      sessionId,
+    }),
+  });
+
   const model = new AzureChatOpenAI({
     model: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
     temperature: 1,
@@ -13,54 +30,17 @@ async function azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStor
     verbose: true,
   });
 
-  const memory = new VectorStoreRetrieverMemory({
-    vectorStoreRetriever: chatHistoryStore.asRetriever({
-      k: 3,
-      filter: {
-        userId: userId,
-        sessionId: sessionId
-      }
-    }),
-    memoryKey: "history",
-    metadata: { userId: userId, sessionId: sessionId, createdAt: new Date().toISOString() },
-  });
-  console.log("🚀 ~ azureOpenAIChatWithHistory ~ memory:", memory);
+  const chain = new ConversationChain({ llm: model, memory });
 
-  const history = await memory.loadMemoryVariables({ input: prompt });
-  // console.log("🚀 ~ azureOpenAIChatWithHistory ~ history:", history);
-  // return history;
-
-  const questionAnsweringPrompt = ChatPromptTemplate.fromMessages([
-    [
-      "system",
-      "ประวัติการสนทนา:\n\n{chat_history}\n\n\n\n" +
-      "ตอบคำถามของผู้ใช้โดยใช้ข้อมูลจากด้านล่างที่เกี่ยวข้องกับคำถามเท่านั้น:\n\n{context}",
-    ],
-    ["human", "{input}"],
-  ]);
-
-  const combineDocsChain = await createStuffDocumentsChain({
-    llm: model,
-    prompt: questionAnsweringPrompt,
-  });
-
-  const chain = await createRetrievalChain({
-    retriever: documentStore.asRetriever(),
-    combineDocsChain,
-  });
-
-  const res = await chain.invoke({
-    chat_history: history.history,
-    input: prompt,
-  });
+  const res = await chain.invoke({ input: prompt });
+  
   console.log("🚀 ~ azureOpenAIChatWithHistory ~ res:", res)
+  // See the chat history in the MongoDb
+  console.log(await memory.chatHistory.getMessages());
 
-  await memory.saveContext(
-    { input: prompt },
-    { output: res.answer },
-  );
-
-  return res.answer;
+  // clear chat history
+  // await memory.chatHistory.clear();
+  return res
 }
 
 module.exports = {
