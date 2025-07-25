@@ -1,4 +1,3 @@
-const { AzureOpenAIEmbeddings } = require("@langchain/openai");
 const { MongoClient } = require("mongodb");
 const { MongoDBAtlasVectorSearch } = require("@langchain/mongodb");
 
@@ -10,14 +9,7 @@ const mongoOptions = {
 
 const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING, mongoOptions);
 
-const embeddings = new AzureOpenAIEmbeddings({
-  azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
-  azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_API_ENDPOINT,
-  openAIApiVersion: process.env.AZURE_OPENAI_EMBEDDINGS_API_VERSION,
-  azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_EMBEDDINGS_MODEL,
-});
-
-async function initializedVectorStore() {
+async function initializedVectorStore(embeddings) {
   await client.connect();
   const db = client.db("test");
 
@@ -36,7 +28,7 @@ async function initializedVectorStore() {
   return store;
 }
 
-async function initializedChatHistoryVectorStore() {
+async function initializedChatHistoryVectorStore(embeddings) {
   await client.connect();
   const db = client.db("test");
   const collectionName = "chat_history_embedded"
@@ -55,7 +47,7 @@ async function initializedChatHistoryVectorStore() {
   return store;
 }
 
-async function saveToVectorStore(documents) {
+async function saveToVectorStore(documents, embeddings) {
   await client.connect();
   const db = client.db("test");
   const collectionName = "documents"

@@ -1,12 +1,13 @@
-const { initializedVectorStore, initializedChatHistoryVectorStore, memory } = require("../utils/vector-store");
+const { initializedVectorStore, initializedChatHistoryVectorStore } = require("../utils/vector-store");
 const { azureOpenAIChat } = require("../utils/openai-chat-rag");
 const { azureOpenAIChatWithHistory } = require("../utils/openai-chat-rag-withhistory");
+const { llm, embedding } = require("../utils/llm-and-embedding-model");
 
 const handleChat = async (req, res) => {
   try {
     const { prompt } = req.body;
-    const documentStore = await initializedVectorStore();
-    const results = await azureOpenAIChat(prompt, documentStore);
+    const documentStore = await initializedVectorStore(embedding);
+    const results = await azureOpenAIChat(prompt, llm, documentStore);
 
     res.json({ result: results });
   } catch (err) {
@@ -18,12 +19,12 @@ const handleChat = async (req, res) => {
 const handleChatWithHistory = async (req, res) => {
   try {
     const { prompt } = req.body;
-    const documentStore = await initializedVectorStore();
-    const chatHistoryStore = await initializedChatHistoryVectorStore();
+    const documentStore = await initializedVectorStore(embedding);
+    const chatHistoryStore = await initializedChatHistoryVectorStore(embedding);
 
     const userId = "test03"
     const sessionId = "test03"
-    const results = await azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStore, userId, sessionId);
+    const results = await azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, userId, sessionId);
 
     res.json({ result: results });
   } catch (err) {
@@ -35,13 +36,13 @@ const handleChatWithHistory = async (req, res) => {
 const handleGetHistory = async (req, res) => {
   try {
     const { prompt } = req.body;
-    const documentStore = await initializedVectorStore();
+    const documentStore = await initializedVectorStore(embedding);
     // const chatHistoryStore = await initializedChatHistoryVectorStore();
     
     const userId = "test03"
     const sessionId = "test03"
-    const chatHistory = await memory(userId, sessionId);
-    const results = await azureOpenAIChatWithHistory(prompt, documentStore, chatHistoryStore, userId, sessionId);
+    // const chatHistory = await memory(userId, sessionId);
+    const results = await azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, userId, sessionId);
 
     res.json({ result: results });
   } catch (err) {

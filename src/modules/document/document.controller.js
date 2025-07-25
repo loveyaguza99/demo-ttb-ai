@@ -4,6 +4,9 @@ const path = require("path");
 const { uploadSingleFile, parseAndChunkFile } = require("../utils/document.js");
 const { convertPdfToImages, extractPdf } = require("../utils/document-pdf.js");
 const { initializedVectorStore, saveToVectorStore } = require("../utils/vector-store.js");
+const { llm, embedding } = require("../utils/llm-and-embedding-model");
+
+const uploadedBy = 'Ko';
 
 const handleUpload = async (req, res) => {
   try {
@@ -11,10 +14,10 @@ const handleUpload = async (req, res) => {
     const filePath = req.file.path;
     const originalName = req.file.originalname;
 
-    const chunkedDocs = await parseAndChunkFile(filePath, originalName);
+    const chunkedDocs = await parseAndChunkFile(filePath, originalName, uploadedBy);
     await fs.unlink(filePath);
 
-    await saveToVectorStore(chunkedDocs);
+    await saveToVectorStore(chunkedDocs, embedding);
 
     res.json({ chunks: chunkedDocs });
   } catch (err) {
@@ -35,10 +38,10 @@ const handleUploadOcr = async (req, res) => {
     const prefix = path.basename(filePath, path.extname(filePath));
     await extractPdf(filePath, prefix, outputDir);
 
-    const chunkedDocs = await parseAndChunkFile('docs/output/output_full.txt', 'output_full.txt');
+    const chunkedDocs = await parseAndChunkFile('docs/output/output_full.txt', 'output_full.txt', uploadedBy);
     await fs.unlink(filePath);
 
-    await saveToVectorStore(chunkedDocs);
+    await saveToVectorStore(chunkedDocs, embedding);
 
     res.json({ chunks: chunkedDocs });
   } catch (err) {
@@ -50,7 +53,7 @@ const handleUploadOcr = async (req, res) => {
 const handleSimilaritySearch = async (req, res) => {
   try {
     const { query } = req.body;
-    const store = await initializedVectorStore();
+    const store = await initializedVectorStore(embedding);
 
     const filter = { preFilter: { uploadedBy: "Ko" } }
 

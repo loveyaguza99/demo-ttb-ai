@@ -34,7 +34,7 @@ function ImageLoader(filePath) {
   };
 }
 
-async function parseAndChunkFile(filePath, originalName) {
+async function parseAndChunkFile(filePath, originalName, uploadedBy) {
   const lowerName = originalName.toLowerCase();
   let loader;
 
@@ -77,7 +77,7 @@ async function parseAndChunkFile(filePath, originalName) {
 
   let chunkedDocs = await splitter.splitDocuments(docs);
 
-  const uploadedBy = 'Ko';
+  // const uploadedBy = 'Ko';
   const createdAt = new Date().toISOString();
   if (uploadedBy) {
     chunkedDocs = chunkedDocs.map(doc => ({

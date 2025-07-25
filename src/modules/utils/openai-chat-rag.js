@@ -4,15 +4,15 @@ const { createStuffDocumentsChain } = require("langchain/chains/combine_document
 const { ChatPromptTemplate } = require("@langchain/core/prompts");
 // const { VectorStoreRetrieverMemory } = require("langchain/memory");
 
-async function azureOpenAIChat(prompt, documentStore) {
-  const model = new AzureChatOpenAI({
-    model: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
-    temperature: 0.7,
-    maxTokens: 500,
-    // timeout: 2,
-    maxRetries: 2,
-    verbose: true,
-  });
+async function azureOpenAIChat(prompt, llm, documentStore) {
+  // const model = new AzureChatOpenAI({
+  //   model: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
+  //   temperature: 0.7,
+  //   maxTokens: 500,
+  //   // timeout: 2,
+  //   maxRetries: 2,
+  //   verbose: true,
+  // });
 
   const questionAnsweringPrompt = ChatPromptTemplate.fromMessages([
     [
@@ -23,7 +23,7 @@ async function azureOpenAIChat(prompt, documentStore) {
   ]);
 
   const combineDocsChain = await createStuffDocumentsChain({
-    llm: model,
+    llm: llm,
     prompt: questionAnsweringPrompt,
   });
 
@@ -36,7 +36,7 @@ async function azureOpenAIChat(prompt, documentStore) {
     // chat_history: history.history,
     input: prompt,
   });
-  console.log("🚀 ~ azureOpenAIChat ~ res:", res)
+  // console.log("🚀 ~ azureOpenAIChat ~ res:", res)
 
   // await memory.saveContext(
   //   { input: prompt },
