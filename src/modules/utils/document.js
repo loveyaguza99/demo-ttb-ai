@@ -6,7 +6,7 @@ const { JSONLoader } = require("langchain/document_loaders/fs/json");
 const { DocxLoader } = require("@langchain/community/document_loaders/fs/docx");
 const { TextLoader } = require("langchain/document_loaders/fs/text");
 const { PPTXLoader } = require("@langchain/community/document_loaders/fs/pptx");
-const { RecursiveCharacterTextSplitter } = require("langchain/text_splitter");
+const { RecursiveCharacterTextSplitter, CharacterTextSplitter } = require("langchain/text_splitter");
 const Tesseract = require('tesseract.js');
 
 // const { OpenAIWhisperAudio } = require("@langchain/community/document_loaders/fs/openai_whisper_audio");
@@ -68,6 +68,12 @@ async function parseAndChunkFile(filePath, originalName) {
     chunkOverlap: 200,
     separators: ["\n\n", "\n", " ", ""],
   });
+
+  // const splitter = new CharacterTextSplitter({
+  //   chunkSize: 400,
+  //   chunkOverlap: 200,
+  //   separators: "\n\n",
+  // });
 
   let chunkedDocs = await splitter.splitDocuments(docs);
 

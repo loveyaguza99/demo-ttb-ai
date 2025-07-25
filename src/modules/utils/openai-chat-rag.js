@@ -7,7 +7,7 @@ const { ChatPromptTemplate } = require("@langchain/core/prompts");
 async function azureOpenAIChat(prompt, documentStore) {
   const model = new AzureChatOpenAI({
     model: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
-    temperature: 0,
+    temperature: 0.7,
     maxTokens: 500,
     // timeout: 2,
     maxRetries: 2,

@@ -41,14 +41,15 @@ async function initializedChatHistoryVectorStore() {
   const db = client.db("test");
   const collectionName = "chat_history_embedded"
   const collection = db.collection(collectionName);
-  const count = await collection.countDocuments({});
+  // const count = await collection.countDocuments({});
 
   const store = new MongoDBAtlasVectorSearch(
     embeddings,
     {
-      client,
-      databaseName: "test",
-      collectionName: collectionName,
+      collection,
+      indexName: "vectorSearchIndex",
+      textKey: "textContent",
+      embeddingKey: "vectorContent",
     }
   );
   return store;
@@ -72,22 +73,8 @@ async function saveToVectorStore(documents) {
   return store;
 }
 
-async function memory(userId, sessionId) {
-  await client.connect();
-  const collection = client.db("test").collection("chat_history");
-
-  const memory = new BufferMemory({
-    chatHistory: new MongoDBChatMessageHistory({
-      collection,
-      sessionId,
-    }),
-  });
-  return memory;
-}
-
 module.exports = {
   initializedVectorStore,
   initializedChatHistoryVectorStore,
   saveToVectorStore,
-  memory
 };
