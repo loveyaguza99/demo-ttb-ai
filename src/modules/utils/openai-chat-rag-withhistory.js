@@ -4,6 +4,8 @@ const { createRetrievalChain } = require("langchain/chains/retrieval");
 const { createStuffDocumentsChain } = require("langchain/chains/combine_documents");
 const { ChatPromptTemplate, MessagesPlaceholder } = require("@langchain/core/prompts");
 const { BufferWindowMemory } = require("langchain/memory");
+const { StringOutputParser } = require("@langchain/core/output_parsers");
+const { RunnableSequence } = require("@langchain/core/runnables");
 const { v4: uuidv4 } = require('uuid');
 
 const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING, {
@@ -16,6 +18,18 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
 
   if (!sessionId) {
     sessionId = uuidv4();
+    await client.db("test").collection("chat_sessions").insertOne({
+      _id: sessionId,
+      userId: userId,
+      createdAt: new Date(),
+      lastUpdated: new Date(),
+      topic: await generatedTopic(llm, prompt),
+    });
+  } else {
+    await client.db("test").collection("chat_sessions").updateOne(
+      { _id: sessionId },
+      { $set: { lastUpdated: new Date() } }
+    );
   }
 
   const memory = new BufferWindowMemory({
@@ -51,27 +65,31 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
     chat_history: history.chat_history
   });
 
-  if (!sessionId) {
-    await client.db("test").collection("chat_sessions").insertOne({
-      _id: sessionId,
-      userId: userId,
-      createdAt: new Date(),
-      lastUpdated: new Date(),
-      topic: "Session ใหม่",
-    });
-  } else {
-    await client.db("test").collection("chat_sessions").updateOne(
-      { _id: sessionId },
-      { $set: { lastUpdated: new Date() } }
-    );
-  }
-
   await memory.saveContext(
     { input: prompt },
     { output: res.answer },
   );
 
   return res.answer;
+}
+
+async function generatedTopic(llm, transcriptText) {
+  const topicPrompt = ChatPromptTemplate.fromMessages([
+    ["system", "คุณคือนักสรุปหัวข้อที่จะตั้งชื่อให้บทสนทนาในรูปแบบกระชับและมีความหมาย"],
+    ["human", "บทสนทนา:\n{chat}\n\nกรุณาตั้งชื่อ topic ที่สั้น บรรทัดเดียว ไม่ต้องใส่หัวข้อ"],
+  ]);
+
+  const topicChain = RunnableSequence.from([
+    topicPrompt,
+    llm,
+    new StringOutputParser(),
+  ]);
+
+  const generatedTopic = await topicChain.invoke({
+    chat: transcriptText,
+  });
+
+  return generatedTopic;
 }
 
 module.exports = {

@@ -20,12 +20,12 @@ const handleChat = async (req, res) => {
 
 const handleChatWithHistory = async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const { prompt, userId, sessionId } = req.body;
     const documentStore = await initializedVectorStore(embedding);
     const chatHistoryStore = await initializedChatHistoryVectorStore(embedding);
 
-    const userId = "test01"
-    const sessionId = false
+    // const userId = "test01"
+    // const sessionId = false
     const results = await azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, userId, sessionId);
 
     res.json({ result: results });
