@@ -9,6 +9,6 @@ const router = express.Router();
 
 router.post("/upload", handleUpload);
 router.post("/upload-ocr", handleUploadOcr);
-router.post("/similarity-search", handleSimilaritySearch);
+router.post("/semantic-search", handleSimilaritySearch);
 
 module.exports = router;

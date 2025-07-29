@@ -2,6 +2,8 @@ const { initializedVectorStore, initializedChatHistoryVectorStore } = require(".
 const { azureOpenAIChat } = require("../utils/openai-chat-rag");
 const { azureOpenAIChatWithHistory } = require("../utils/openai-chat-rag-withhistory");
 const { llm, embedding } = require("../utils/llm-and-embedding-model");
+const { MongoDBChatMessageHistory } = require("@langchain/mongodb");
+const { MongoClient } = require("mongodb");
 
 const handleChat = async (req, res) => {
   try {
@@ -22,8 +24,8 @@ const handleChatWithHistory = async (req, res) => {
     const documentStore = await initializedVectorStore(embedding);
     const chatHistoryStore = await initializedChatHistoryVectorStore(embedding);
 
-    const userId = "test03"
-    const sessionId = "test03"
+    const userId = "test01"
+    const sessionId = "test01"
     const results = await azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, userId, sessionId);
 
     res.json({ result: results });
@@ -35,16 +37,27 @@ const handleChatWithHistory = async (req, res) => {
 
 const handleGetHistory = async (req, res) => {
   try {
-    const { prompt } = req.body;
-    const documentStore = await initializedVectorStore(embedding);
-    // const chatHistoryStore = await initializedChatHistoryVectorStore();
-    
-    const userId = "test03"
-    const sessionId = "test03"
-    // const chatHistory = await memory(userId, sessionId);
-    const results = await azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, userId, sessionId);
 
-    res.json({ result: results });
+    const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING, {
+      driverInfo: { name: "langchainjs" },
+    });
+
+    await client.connect();
+    const collection = client.db("test").collection("chat_history");
+
+    // const { prompt } = req.body;
+    const userId = "test01"
+    const sessionId = "test01"
+
+    const memory = new MongoDBChatMessageHistory({
+      collection,
+      sessionId: `${userId}-${sessionId}`,
+    });
+
+    const history = await memory.getMessages();
+    console.log("🚀 ~ handleGetHistory ~ history:", history)
+
+    res.json({ result: history });
   } catch (err) {
     console.error("❌ Chat error:", err);
     res.status(500).json({ error: "Chat failed" });

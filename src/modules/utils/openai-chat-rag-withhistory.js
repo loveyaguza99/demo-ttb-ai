@@ -18,6 +18,7 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
     chatHistory: new MongoDBChatMessageHistory({
       collection,
       sessionId: `${userId}-${sessionId}`,
+      // userId: userId
     }),
     memoryKey: "chat_history",
     returnMessages: true,
@@ -35,12 +36,12 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
   });
 
   const retrievalChain = await createRetrievalChain({
-    retriever: documentStore.asRetriever({ k: 3 }),
+    retriever: documentStore.asRetriever({ k: 5 }),
     combineDocsChain,
   });
 
   const history = await memory.loadMemoryVariables({ input: prompt });
-  console.log("🚀 ~ azureOpenAIChatWithHistory ~ history:", history.chat_history)
+  // console.log("🚀 ~ azureOpenAIChatWithHistory ~ history:", history.chat_history)
 
   const res = await retrievalChain.invoke({
     input: prompt,

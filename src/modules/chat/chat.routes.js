@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.post("/", handleChat);
 router.post("/with-history", handleChatWithHistory);
-router.get("/history", handleGetHistory);
+router.get("/get-history", handleGetHistory);
 
 module.exports = router;
