@@ -4,6 +4,7 @@ const { createRetrievalChain } = require("langchain/chains/retrieval");
 const { createStuffDocumentsChain } = require("langchain/chains/combine_documents");
 const { ChatPromptTemplate, MessagesPlaceholder } = require("@langchain/core/prompts");
 const { BufferWindowMemory } = require("langchain/memory");
+const { v4: uuidv4 } = require('uuid');
 
 const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING, {
   driverInfo: { name: "langchainjs" },
@@ -13,12 +14,15 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
   await client.connect();
   const collection = client.db("test").collection("chat_history");
 
+  if (!sessionId) {
+    sessionId = uuidv4();
+  }
+
   const memory = new BufferWindowMemory({
     k: 5,
     chatHistory: new MongoDBChatMessageHistory({
       collection,
-      sessionId: `${userId}-${sessionId}`,
-      // userId: userId
+      sessionId: sessionId
     }),
     memoryKey: "chat_history",
     returnMessages: true,
@@ -40,13 +44,27 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
     combineDocsChain,
   });
 
-  const history = await memory.loadMemoryVariables({ input: prompt });
-  // console.log("🚀 ~ azureOpenAIChatWithHistory ~ history:", history.chat_history)
+  const history = await memory.loadMemoryVariables();
 
   const res = await retrievalChain.invoke({
     input: prompt,
     chat_history: history.chat_history
   });
+
+  if (!sessionId) {
+    await client.db("test").collection("chat_sessions").insertOne({
+      _id: sessionId,
+      userId: userId,
+      createdAt: new Date(),
+      lastUpdated: new Date(),
+      topic: "Session ใหม่",
+    });
+  } else {
+    await client.db("test").collection("chat_sessions").updateOne(
+      { _id: sessionId },
+      { $set: { lastUpdated: new Date() } }
+    );
+  }
 
   await memory.saveContext(
     { input: prompt },

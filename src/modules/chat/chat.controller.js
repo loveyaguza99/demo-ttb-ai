@@ -25,10 +25,32 @@ const handleChatWithHistory = async (req, res) => {
     const chatHistoryStore = await initializedChatHistoryVectorStore(embedding);
 
     const userId = "test01"
-    const sessionId = "test01"
+    const sessionId = false
     const results = await azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, userId, sessionId);
 
     res.json({ result: results });
+  } catch (err) {
+    console.error("❌ Chat error:", err);
+    res.status(500).json({ error: "Chat failed" });
+  }
+};
+
+const handleGetChatSessionId = async (req, res) => {
+  try {
+
+    const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING);
+
+    await client.connect();
+    const collection = client.db("test").collection("chat_sessions");
+
+    const { userId } = req.body;
+
+    const sessions = await collection
+      .find({ userId: userId })
+      .sort({ lastUpdated: -1 })
+      .toArray();
+
+    res.json({ result: sessions });
   } catch (err) {
     console.error("❌ Chat error:", err);
     res.status(500).json({ error: "Chat failed" });
@@ -45,17 +67,15 @@ const handleGetHistory = async (req, res) => {
     await client.connect();
     const collection = client.db("test").collection("chat_history");
 
-    // const { prompt } = req.body;
-    const userId = "test01"
-    const sessionId = "test01"
+    const { sessionId } = req.body;
 
     const memory = new MongoDBChatMessageHistory({
       collection,
-      sessionId: `${userId}-${sessionId}`,
+      sessionId: sessionId,
     });
 
     const history = await memory.getMessages();
-    console.log("🚀 ~ handleGetHistory ~ history:", history)
+    // console.log("🚀 ~ handleGetHistory ~ history:", history)
 
     res.json({ result: history });
   } catch (err) {
@@ -67,5 +87,6 @@ const handleGetHistory = async (req, res) => {
 module.exports = {
   handleChat,
   handleChatWithHistory,
+  handleGetChatSessionId,
   handleGetHistory
 };
