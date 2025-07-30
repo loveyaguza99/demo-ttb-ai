@@ -65,8 +65,14 @@ async function saveToVectorStore(documents, embeddings) {
   return store;
 }
 
+async function initializedMongodb() {
+  await client.connect();
+  return client;
+}
+
 module.exports = {
   initializedVectorStore,
   initializedChatHistoryVectorStore,
   saveToVectorStore,
+  initializedMongodb
 };

@@ -1,8 +1,6 @@
 const WebSocket = require('ws');
 const { azureOpenAIChat } = require('../utils/openai-chat');
 const { speechToText, textToSpeech } = require('../utils/speech');
-// const fs = require('fs');
-// const path = require('path');
 
 function initChatSocket(wss) {
   wss.on('connection', (ws) => {

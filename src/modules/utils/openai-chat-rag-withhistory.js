@@ -8,12 +8,7 @@ const { StringOutputParser } = require("@langchain/core/output_parsers");
 const { RunnableSequence } = require("@langchain/core/runnables");
 const { v4: uuidv4 } = require('uuid');
 
-const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING, {
-  driverInfo: { name: "langchainjs" },
-});
-
-async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, userId, sessionId) {
-  await client.connect();
+async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, client, userId, sessionId) {
   const collection = client.db("test").collection("chat_history");
 
   if (!sessionId) {

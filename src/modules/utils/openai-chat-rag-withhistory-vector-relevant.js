@@ -12,7 +12,7 @@ const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING, {
   driverInfo: { name: "langchainjs" },
 });
 
-async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, userId, sessionId) {
+async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, client, userId, sessionId) {
   try {
     await client.connect();
     const collection = client.db("test").collection("chat_history");
@@ -28,7 +28,6 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
         createdAt: new Date().toISOString(),
       },
     });
-    // console.log("🚀 ~ azureOpenAIChatWithHistory ~ vectorMemory:", vectorMemory)
 
     const sequentialChatHistory = new MongoDBChatMessageHistory({
       collection,

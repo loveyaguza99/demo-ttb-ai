@@ -1,9 +1,8 @@
-const { initializedVectorStore, initializedChatHistoryVectorStore } = require("../utils/vector-store");
+const { initializedVectorStore, initializedChatHistoryVectorStore, initializedMongodb } = require("../utils/vector-store");
 const { azureOpenAIChat } = require("../utils/openai-chat-rag");
 const { azureOpenAIChatWithHistory } = require("../utils/openai-chat-rag-withhistory");
 const { llm, embedding } = require("../utils/llm-and-embedding-model");
 const { MongoDBChatMessageHistory } = require("@langchain/mongodb");
-const { MongoClient } = require("mongodb");
 
 const handleChat = async (req, res) => {
   try {
@@ -23,10 +22,9 @@ const handleChatWithHistory = async (req, res) => {
     const { prompt, userId, sessionId } = req.body;
     const documentStore = await initializedVectorStore(embedding);
     const chatHistoryStore = await initializedChatHistoryVectorStore(embedding);
+    const client = await initializedMongodb();
 
-    // const userId = "test01"
-    // const sessionId = false
-    const results = await azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, userId, sessionId);
+    const results = await azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, client, userId, sessionId);
 
     res.json({ result: results });
   } catch (err) {
@@ -35,12 +33,10 @@ const handleChatWithHistory = async (req, res) => {
   }
 };
 
-const handleGetChatSessionId = async (req, res) => {
+const handleGetChatSessionByUserId = async (req, res) => {
   try {
+    const client = await initializedMongodb();
 
-    const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING);
-
-    await client.connect();
     const collection = client.db("test").collection("chat_sessions");
 
     const { userId } = req.body;
@@ -60,11 +56,8 @@ const handleGetChatSessionId = async (req, res) => {
 const handleGetHistory = async (req, res) => {
   try {
 
-    const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING, {
-      driverInfo: { name: "langchainjs" },
-    });
+    const client = await initializedMongodb();
 
-    await client.connect();
     const collection = client.db("test").collection("chat_history");
 
     const { sessionId } = req.body;
@@ -87,6 +80,6 @@ const handleGetHistory = async (req, res) => {
 module.exports = {
   handleChat,
   handleChatWithHistory,
-  handleGetChatSessionId,
+  handleGetChatSessionByUserId,
   handleGetHistory
 };
