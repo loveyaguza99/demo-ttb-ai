@@ -1,6 +1,7 @@
 const { initializedVectorStore, initializedChatHistoryVectorStore, initializedMongodb } = require("../utils/vector-store");
 const { azureOpenAIChat } = require("../utils/openai-chat-rag");
-const { azureOpenAIChatWithHistory } = require("../utils/openai-chat-rag-withhistory");
+// const { azureOpenAIChatWithHistory } = require("../utils/openai-chat-rag-withhistory");
+const { azureOpenAIChatWithHistory } = require("../utils/openai-chat-rag-withhistory-history-aware-retriever");
 const { llm, embedding } = require("../utils/llm-and-embedding-model");
 const { MongoDBChatMessageHistory } = require("@langchain/mongodb");
 

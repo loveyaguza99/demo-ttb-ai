@@ -7,6 +7,7 @@ const { BufferWindowMemory } = require("langchain/memory");
 const { StringOutputParser } = require("@langchain/core/output_parsers");
 const { RunnableSequence } = require("@langchain/core/runnables");
 const { v4: uuidv4 } = require('uuid');
+const { createHistoryAwareRetriever } = require("langchain/chains/history_aware_retriever");
 
 async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, client, userId, sessionId) {
   const collection = client.db("test").collection("chat_history");
@@ -48,10 +49,28 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
     prompt: questionAnsweringPrompt,
   });
 
-  const retrievalChain = await createRetrievalChain({
-    retriever: documentStore.asRetriever({ k: 5 }),
-    combineDocsChain,
-  });
+  // const retrievalChain = await createRetrievalChain({
+  //   retriever: documentStore.asRetriever({ k: 5 }),
+  //   combineDocsChain,
+  // });
+
+  const rephrasePrompt = ChatPromptTemplate.fromMessages([
+  ["system", "โปรดปรับคำถามด้านล่างให้อยู่ในรูปแบบที่ชัดเจน โดยอิงจากประวัติการสนทนา:"],
+  new MessagesPlaceholder("chat_history"),
+  ["human", "{input}"]
+]);
+
+const historyAwareRetriever = await createHistoryAwareRetriever({
+  llm: llm,
+  retriever: documentStore.asRetriever({ k: 5 }),
+  rephrasePrompt,
+});
+
+const retrievalChain = await createRetrievalChain({
+  retriever: historyAwareRetriever,
+  combineDocsChain,
+});
+
 
   const history = await memory.loadMemoryVariables();
 

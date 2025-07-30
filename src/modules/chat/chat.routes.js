@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.post("/", handleChat);
 router.post("/with-history", handleChatWithHistory);
-router.get("/get-chat-session-user-id", handleGetChatSessionByUserId);
-router.get("/get-history", handleGetHistory);
+router.post("/get-chat-session-user-id", handleGetChatSessionByUserId);
+router.post("/get-history", handleGetHistory);
 
 module.exports = router;
