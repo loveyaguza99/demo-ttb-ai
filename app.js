@@ -1,4 +1,5 @@
 const express = require("express");
+const helmet = require('helmet');
 const cors = require("cors");
 
 const documentRoutes = require("./src/modules/document/document.routes.js");
@@ -15,6 +16,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(helmet());
 
 app.use("/docs", documentRoutes);
 app.use("/chat", chatRoutes);

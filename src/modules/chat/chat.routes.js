@@ -1,11 +1,12 @@
 const express = require("express");
-const { handleChat, handleChatWithHistory, handleGetHistory, handleGetChatSessionByUserId } = require("./chat.controller");
+const Validator = require('./chat.validator');
+const controller = require("./chat.controller");
 
 const router = express.Router();
 
-router.post("/", handleChat);
-router.post("/with-history", handleChatWithHistory);
-router.post("/get-chat-session-user-id", handleGetChatSessionByUserId);
-router.post("/get-history", handleGetHistory);
+router.post("/", controller.handleChat);
+router.post("/with-history", Validator.validateChat, controller.handleChatWithHistory);
+router.post("/get-chat-session-user-id", Validator.validateGetChatSessionByUserId, controller.handleGetChatSessionByUserId);
+router.post("/get-history", Validator.validateGetChatByUserId, controller.handleGetHistory);
 
 module.exports = router;

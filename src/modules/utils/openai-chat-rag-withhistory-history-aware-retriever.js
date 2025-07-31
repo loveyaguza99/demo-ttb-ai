@@ -63,12 +63,12 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
 const historyAwareRetriever = await createHistoryAwareRetriever({
   llm: llm,
   retriever: documentStore.asRetriever({ k: 5 }),
-  rephrasePrompt,
+  rephrasePrompt: rephrasePrompt,
 });
 
 const retrievalChain = await createRetrievalChain({
   retriever: historyAwareRetriever,
-  combineDocsChain,
+  combineDocsChain: combineDocsChain,
 });
 
 
@@ -78,6 +78,7 @@ const retrievalChain = await createRetrievalChain({
     input: prompt,
     chat_history: history.chat_history
   });
+  console.log("🚀 ~ azureOpenAIChatWithHistory ~ res:", res)
 
   await memory.saveContext(
     { input: prompt },
