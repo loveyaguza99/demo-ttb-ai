@@ -8,10 +8,11 @@ const mongoOptions = {
 };
 
 const client = new MongoClient(process.env.MONGODB_ATLAS_CONNECTION_STRING, mongoOptions);
+const dbName = process.env.MONGODB_ATLAS_DATABASE_NAME
 
 async function initializedVectorStore(embeddings) {
   await client.connect();
-  const db = client.db("test");
+  const db = client.db(dbName);
 
   const collectionName = "documents"
   const collection = db.collection(collectionName);
@@ -30,7 +31,7 @@ async function initializedVectorStore(embeddings) {
 
 async function initializedChatHistoryVectorStore(embeddings) {
   await client.connect();
-  const db = client.db("test");
+  const db = client.db(dbName);
   const collectionName = "chat_history_embedded"
   const collection = db.collection(collectionName);
   // const count = await collection.countDocuments({});
@@ -49,7 +50,7 @@ async function initializedChatHistoryVectorStore(embeddings) {
 
 async function saveToVectorStore(documents, embeddings) {
   await client.connect();
-  const db = client.db("test");
+  const db = client.db(dbName);
   const collectionName = "documents"
   const collection = db.collection(collectionName);
   const store = await MongoDBAtlasVectorSearch.fromDocuments(

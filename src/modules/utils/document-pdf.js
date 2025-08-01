@@ -11,7 +11,7 @@ async function convertPdfToImages(pdfPath, outputDir) {
     out_dir: outputDir,
     out_prefix: path.basename(pdfPath, path.extname(pdfPath)),
     page: null, // All pages
-    scale: 2048 // DPI
+    // scale: 2048 // DPI
   };
 
   console.log('🔄 Converting PDF to images...');

@@ -37,8 +37,8 @@ const handleChatWithHistory = async (req, res) => {
 const handleGetChatSessionByUserId = async (req, res) => {
   try {
     const client = await initializedMongodb();
-
-    const collection = client.db("test").collection("chat_sessions");
+    const dbName = process.env.MONGODB_ATLAS_DATABASE_NAME
+    const collection = client.db(dbName).collection("chat_sessions");
 
     const { userId } = req.body;
 
@@ -58,8 +58,8 @@ const handleGetHistory = async (req, res) => {
   try {
 
     const client = await initializedMongodb();
-
-    const collection = client.db("test").collection("chat_history");
+    const dbName = process.env.MONGODB_ATLAS_DATABASE_NAME
+    const collection = client.db(dbName).collection("chat_history");
 
     const { sessionId } = req.body;
 

@@ -10,11 +10,12 @@ const { v4: uuidv4 } = require('uuid');
 const { createHistoryAwareRetriever } = require("langchain/chains/history_aware_retriever");
 
 async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, client, userId, sessionId) {
-  const collection = client.db("test").collection("chat_history");
+  const dbName = process.env.MONGODB_ATLAS_DATABASE_NAME
+  const collection = client.db(dbName).collection("chat_history");
 
   if (!sessionId) {
     sessionId = uuidv4();
-    await client.db("test").collection("chat_sessions").insertOne({
+    await client.db(dbName).collection("chat_sessions").insertOne({
       userId: userId,
       sessionId: sessionId,
       createdAt: new Date(),
@@ -22,7 +23,7 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
       topic: await generatedTopic(llm, prompt),
     });
   } else {
-    await client.db("test").collection("chat_sessions").updateOne(
+    await client.db(dbName).collection("chat_sessions").updateOne(
       { sessionId: sessionId },
       { $set: { lastUpdated: new Date() } }
     );
@@ -78,7 +79,7 @@ const retrievalChain = await createRetrievalChain({
     input: prompt,
     chat_history: history.chat_history
   });
-  console.log("🚀 ~ azureOpenAIChatWithHistory ~ res:", res)
+  // console.log("🚀 ~ azureOpenAIChatWithHistory ~ res:", res)
 
   await memory.saveContext(
     { input: prompt },

@@ -6,7 +6,8 @@ const { JSONLoader } = require("langchain/document_loaders/fs/json");
 const { DocxLoader } = require("@langchain/community/document_loaders/fs/docx");
 const { TextLoader } = require("langchain/document_loaders/fs/text");
 const { PPTXLoader } = require("@langchain/community/document_loaders/fs/pptx");
-const { RecursiveCharacterTextSplitter, CharacterTextSplitter } = require("langchain/text_splitter");
+const { loadMixedPdf } = require('./pdfMixedloader'); // ถ้าแยกไฟล์ไว้
+const { RecursiveCharacterTextSplitter, CharacterTextSplitter, TokenTextSplitter } = require("langchain/text_splitter");
 const Tesseract = require('tesseract.js');
 
 // const { OpenAIWhisperAudio } = require("@langchain/community/document_loaders/fs/openai_whisper_audio");
@@ -38,7 +39,8 @@ async function parseAndChunkFile(filePath, originalName, uploadedBy) {
   const lowerName = originalName.toLowerCase();
   let loader;
 
-  if (lowerName.endsWith(".pdf")) loader = new PDFLoader(filePath);
+  // if (lowerName.endsWith(".pdf")) loader = new PDFLoader(filePath);
+  if (lowerName.endsWith(".pdf")) loader = new loadMixedPdf(filePath);
   else if (lowerName.endsWith(".csv")) loader = new CSVLoader(filePath);
   else if (lowerName.endsWith(".json")) loader = new JSONLoader(filePath);
   else if (lowerName.endsWith(".docx")) loader = new DocxLoader(filePath);
@@ -63,11 +65,17 @@ async function parseAndChunkFile(filePath, originalName, uploadedBy) {
 
   const docs = await loader.load();
 
-  const splitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 1000,
-    chunkOverlap: 200,
-    separators: ["\n\n", "\n", " ", ""],
+  const splitter = new TokenTextSplitter({
+    encodingName: "cl100k_base",
+    chunkSize: 600,
+    chunkOverlap: 100,
   });
+
+  // const splitter = new RecursiveCharacterTextSplitter({
+  //   chunkSize: 1000,
+  //   chunkOverlap: 200,
+  //   separators: ["\n\n", "\n", " ", ""],
+  // });
 
   // const splitter = new CharacterTextSplitter({
   //   chunkSize: 400,
