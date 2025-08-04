@@ -67,8 +67,8 @@ async function parseAndChunkFile(filePath, originalName, uploadedBy) {
 
   const splitter = new TokenTextSplitter({
     encodingName: "cl100k_base",
-    chunkSize: 600,
-    chunkOverlap: 100,
+    chunkSize: 2000,
+    chunkOverlap: 200,
   });
 
   // const splitter = new RecursiveCharacterTextSplitter({

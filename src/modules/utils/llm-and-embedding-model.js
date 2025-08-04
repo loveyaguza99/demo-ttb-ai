@@ -6,6 +6,7 @@ const llm = new AzureChatOpenAI({
   maxTokens: 2000,
   maxRetries: 2,
   verbose: true,
+  // streaming: true,
 });
 
 const embedding = new AzureOpenAIEmbeddings({

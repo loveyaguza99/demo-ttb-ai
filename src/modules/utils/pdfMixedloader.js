@@ -23,58 +23,30 @@ function loadMixedPdf(filePath) {
         scale: 2048
       });
 
-      // const numPages = pdfData.numpages;
       const ocrTexts = [];
 
       const worker = await Tesseract.createWorker('tha+eng');
 
       const imageFiles = fs.readdirSync(outputDir)
         .filter(f => f.endsWith('.jpg'))
-        .sort(); // ถ้าต้องการเรียงตามชื่อ
+        .sort();
+        
       for (const file of imageFiles) {
         const imagePath = path.join(outputDir, file);
         const buffer = fs.readFileSync(imagePath);
         const updatedBuffer = await sharp(buffer)
-          .withMetadata({ density: 2048 }) // ใส่ DPI
+          .withMetadata({ density: 2048 })
           .toBuffer();
         const {
           data: { text }
         } = await worker.recognize(updatedBuffer);
-        ocrTexts.push(text);
 
+        ocrTexts.push(text);
         fs.unlinkSync(imagePath);
       }
-      // for (let i = 1; i <= numPages; i++) {
-      //   const imagePath = path.join(outputDir, `page-${i}.png`);
-      //   const {
-      //     data: { text }
-      //   } = await worker.recognize(imagePath);
-      //   ocrTexts.push(text);
-      // }
       await worker.terminate();
-      
       fs.rmSync(outputDir, { recursive: true, force: true });
-
-      // รวม OCR และ text layer และลบ duplicate
       const ocrFull = ocrTexts.join('\n').trim();
-      // const textLayer = pdfData.text.trim();
-
-      // // กรองซ้ำ (normalize text layer เพื่อตัดจาก OCR)
-      // const textLayerLines = new Set(
-      //   textLayer
-      //     .split('\n')
-      //     .map(l => l.trim().toLowerCase())
-      //     .filter(Boolean)
-      // );
-
-      // const finalText = ocrFull
-      //   .split('\n')
-      //   .map(l => l.trim())
-      //   .filter(l => !textLayerLines.has(l.toLowerCase()))
-      //   .concat(textLayer)
-      //   .join('\n')
-      //   .trim();
-
       return [
         {
           pageContent: ocrFull,

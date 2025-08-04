@@ -1,4 +1,3 @@
-const { MongoClient } = require("mongodb");
 const { MongoDBChatMessageHistory } = require("@langchain/mongodb");
 const { createRetrievalChain } = require("langchain/chains/retrieval");
 const { createStuffDocumentsChain } = require("langchain/chains/combine_documents");
@@ -8,8 +7,9 @@ const { StringOutputParser } = require("@langchain/core/output_parsers");
 const { RunnableSequence } = require("@langchain/core/runnables");
 const { v4: uuidv4 } = require('uuid');
 const { createHistoryAwareRetriever } = require("langchain/chains/history_aware_retriever");
+const { pull } = require("langchain/hub");
 
-async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, client, userId, sessionId) {
+async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, client, userId, sessionId, streamChunkResponse) {
   const dbName = process.env.MONGODB_ATLAS_DATABASE_NAME
   const collection = client.db(dbName).collection("chat_history");
 
@@ -30,7 +30,7 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
   }
 
   const memory = new BufferWindowMemory({
-    k: 5,
+    k: 3,
     chatHistory: new MongoDBChatMessageHistory({
       collection,
       sessionId: sessionId
@@ -50,20 +50,11 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
     prompt: questionAnsweringPrompt,
   });
 
-  // const retrievalChain = await createRetrievalChain({
-  //   retriever: documentStore.asRetriever({ k: 5 }),
-  //   combineDocsChain,
-  // });
-
-  const rephrasePrompt = ChatPromptTemplate.fromMessages([
-    ["system", "โปรดปรับคำถามด้านล่างให้อยู่ในรูปแบบที่ชัดเจน โดยอิงจากประวัติการสนทนา:"],
-    new MessagesPlaceholder("chat_history"),
-    ["human", "{input}"]
-  ]);
+  const rephrasePrompt = await pull("langchain-ai/chat-langchain-rephrase");
 
   const historyAwareRetriever = await createHistoryAwareRetriever({
     llm: llm,
-    retriever: documentStore.asRetriever({ k: 5 }),
+    retriever: documentStore.asRetriever({ k: 3 }),
     rephrasePrompt: rephrasePrompt,
   });
 
@@ -75,18 +66,27 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
 
   const history = await memory.loadMemoryVariables();
 
-  const res = await retrievalChain.invoke({
+  const res = await retrievalChain.stream({
     input: prompt,
     chat_history: history.chat_history
   });
-  // console.log("🚀 ~ azureOpenAIChatWithHistory ~ res:", res)
+
+  let fullAnswer = '';
+
+  for await (const chunk of res) {
+    const resChunk = chunk?.answer || '';
+    fullAnswer += resChunk;
+
+    if (streamChunkResponse) {
+      streamChunkResponse(resChunk);
+    }
+  }
 
   await memory.saveContext(
     { input: prompt },
-    { output: res.answer },
+    { output: fullAnswer },
   );
 
-  return { content: res.answer, sessionId: sessionId };
 }
 
 async function generatedTopic(llm, transcriptText) {

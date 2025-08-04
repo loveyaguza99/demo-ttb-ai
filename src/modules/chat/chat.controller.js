@@ -1,7 +1,7 @@
 const { initializedVectorStore, initializedChatHistoryVectorStore, initializedMongodb } = require("../utils/vector-store");
 const { azureOpenAIChat } = require("../utils/openai-chat-rag");
 // const { azureOpenAIChatWithHistory } = require("../utils/openai-chat-rag-withhistory");
-const { azureOpenAIChatWithHistory } = require("../utils/openai-chat-rag-withhistory-history-aware-retriever");
+const { azureOpenAIChatWithHistory } = require("../utils/openai-chat-rag-withhistory-history-aware-retriever-stream");
 const { llm, embedding } = require("../utils/llm-and-embedding-model");
 const { MongoDBChatMessageHistory } = require("@langchain/mongodb");
 
@@ -25,9 +25,11 @@ const handleChatWithHistory = async (req, res) => {
     const chatHistoryStore = await initializedChatHistoryVectorStore(embedding);
     const client = await initializedMongodb();
 
-    const results = await azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, client, userId, sessionId);
+    await azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, client, userId, sessionId, (streamChunkResponse) => {
+      res.write(streamChunkResponse);
+    });
 
-    res.json({ result: results });
+    res.end();
   } catch (err) {
     console.error("❌ Chat error:", err);
     res.status(500).json({ error: "Chat failed" });
