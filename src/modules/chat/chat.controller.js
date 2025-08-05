@@ -80,9 +80,29 @@ const handleGetHistory = async (req, res) => {
   }
 };
 
+const handleDeleteHistory = async (req, res) => {
+  try {
+    const { userId, sessionId } = req.body;
+
+    const client = await initializedMongodb();
+    const dbName = process.env.MONGODB_ATLAS_DATABASE_NAME
+    const historyCollection = client.db(dbName).collection("chat_history");
+    const sessionCollection = client.db(dbName).collection("chat_sessions");
+
+    await historyCollection.deleteOne({ sessionId });
+    await sessionCollection.deleteOne({ sessionId, userId });
+
+    res.json({ result: "Success" });
+  } catch (err) {
+    console.error("❌ Chat error:", err);
+    res.status(500).json({ error: "Chat failed" });
+  }
+};
+
 module.exports = {
   handleChat,
   handleChatWithHistory,
   handleGetChatSessionByUserId,
-  handleGetHistory
+  handleGetHistory,
+  handleDeleteHistory
 };

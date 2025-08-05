@@ -10,7 +10,7 @@ function loadMixedPdf(filePath) {
   return {
     load: async () => {
       const buffer = fs.readFileSync(filePath);
-      const pdfData = await pdfParse(buffer);
+      // const pdfData = await pdfParse(buffer);
 
       const outputDir = path.join(path.dirname(filePath), path.basename(filePath, path.extname(filePath)) + '_img');
       fs.mkdirSync(outputDir, { recursive: true });
@@ -27,10 +27,14 @@ function loadMixedPdf(filePath) {
 
       const worker = await Tesseract.createWorker('tha+eng');
 
+      await worker.setParameters({
+        tessedit_pageseg_mode: 8
+      });
+
       const imageFiles = fs.readdirSync(outputDir)
         .filter(f => f.endsWith('.jpg'))
         .sort();
-        
+
       for (const file of imageFiles) {
         const imagePath = path.join(outputDir, file);
         const buffer = fs.readFileSync(imagePath);

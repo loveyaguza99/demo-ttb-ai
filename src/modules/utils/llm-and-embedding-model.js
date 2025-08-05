@@ -3,7 +3,8 @@ const { AzureChatOpenAI, AzureOpenAIEmbeddings } = require("@langchain/openai");
 const llm = new AzureChatOpenAI({
   model: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
   temperature: 0.7,
-  maxTokens: 2000,
+  maxTokens: 500,
+  // maxCompletionTokens: 500,
   maxRetries: 2,
   verbose: true,
   // streaming: true,

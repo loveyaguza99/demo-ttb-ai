@@ -7,7 +7,7 @@ const { StringOutputParser } = require("@langchain/core/output_parsers");
 const { RunnableSequence } = require("@langchain/core/runnables");
 const { v4: uuidv4 } = require('uuid');
 const { createHistoryAwareRetriever } = require("langchain/chains/history_aware_retriever");
-const { pull } = require("langchain/hub");
+// const { pull } = require("langchain/hub");
 
 async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistoryStore, client, userId, sessionId, streamChunkResponse) {
   const dbName = process.env.MONGODB_ATLAS_DATABASE_NAME
@@ -40,7 +40,7 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
   });
 
   const questionAnsweringPrompt = ChatPromptTemplate.fromMessages([
-    ["system", "ตอบคำถามของผู้ใช้โดยใช้ข้อมูลจากด้านล่างที่เกี่ยวข้องกับคำถามเท่านั้น:\n\n{context}"],
+    ["system", "ตอบคำถามการใช้งานใดๆ โดยอิงตามบริบทด้านล่างนี้เท่านั้น:\n\n<context>{context}</context>"],
     new MessagesPlaceholder("chat_history"),
     ["human", "{input}"],
   ]);
@@ -50,11 +50,17 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
     prompt: questionAnsweringPrompt,
   });
 
-  const rephrasePrompt = await pull("langchain-ai/chat-langchain-rephrase");
+  const rephrasePrompt = ChatPromptTemplate.fromMessages([
+    ["system", `จากบทสนทนาและคำถามติดตามด้านล่าง กรุณาแปลงคำถามติดตามให้เป็นคำถามใหม่ที่สมบูรณ์ และเข้าใจได้โดยไม่ต้องพึ่งบริบทก่อนหน้า`],
+    new MessagesPlaceholder("chat_history"),
+    ["human", "คำถามติดตาม: {input}\nคำถามที่แปลงแล้ว:"]
+  ]);
+
+  // const rephrasePrompt = await pull("langchain-ai/chat-langchain-rephrase");
 
   const historyAwareRetriever = await createHistoryAwareRetriever({
     llm: llm,
-    retriever: documentStore.asRetriever({ k: 3 }),
+    retriever: documentStore.asRetriever({ k: 4 }),
     rephrasePrompt: rephrasePrompt,
   });
 
@@ -91,8 +97,8 @@ async function azureOpenAIChatWithHistory(prompt, llm, documentStore, chatHistor
 
 async function generatedTopic(llm, transcriptText) {
   const topicPrompt = ChatPromptTemplate.fromMessages([
-    ["system", "คุณคือนักสรุปหัวข้อที่จะตั้งชื่อให้บทสนทนาในรูปแบบกระชับและมีความหมาย"],
-    ["human", "บทสนทนา:\n{chat}\n\nกรุณาตั้งชื่อ topic ที่สั้น บรรทัดเดียว ไม่ต้องใส่หัวข้อ"],
+    ["system", "คุณคือผู้ช่วยในการสรุปบทสนทนา โดยมีหน้าที่ตั้งชื่อให้กับบทสนทนาในรูปแบบหัวข้อที่สั้น กระชับ เข้าใจง่าย และสื่อความหมายของเนื้อหา ต้องเป็นข้อความสั้น กระชับ ไม่เกิน 10 คำ และอยู่ในบรรทัดเดียว"],
+    ["human", "บทสนทนา:\n{chat}\n\n"],
   ]);
 
   const topicChain = RunnableSequence.from([

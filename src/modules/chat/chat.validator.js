@@ -31,3 +31,13 @@ exports.validateGetChatByUserId = [
     .isString().withMessage('isString'),
   validateRequest
 ];
+
+exports.validateRemoveChatHistory = [
+  body('userId')
+    .notEmpty().withMessage('notEmpty')
+    .isString().withMessage('isString'),
+  body('sessionId')
+    .notEmpty().withMessage('notEmpty')
+    .isString().withMessage('isString'),
+  validateRequest
+];

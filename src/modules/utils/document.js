@@ -6,7 +6,7 @@ const { JSONLoader } = require("langchain/document_loaders/fs/json");
 const { DocxLoader } = require("@langchain/community/document_loaders/fs/docx");
 const { TextLoader } = require("langchain/document_loaders/fs/text");
 const { PPTXLoader } = require("@langchain/community/document_loaders/fs/pptx");
-const { loadMixedPdf } = require('./pdfMixedloader'); // ถ้าแยกไฟล์ไว้
+const { loadMixedPdf } = require('./pdfMixedloader');
 const { RecursiveCharacterTextSplitter, CharacterTextSplitter, TokenTextSplitter } = require("langchain/text_splitter");
 const Tesseract = require('tesseract.js');
 
@@ -17,6 +17,18 @@ function uploadSingleFile(fieldName) {
     return new Promise((resolve, reject) => {
       const upload = multer({ dest: 'uploads/' });
       upload.single(fieldName)(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  };
+}
+
+function uploadMultipleFiles(fieldName) {
+  return function runMulter(req, res) {
+    return new Promise((resolve, reject) => {
+      const upload = multer({ dest: 'uploads/' });
+      upload.array(fieldName)(req, res, (err) => {
         if (err) reject(err);
         else resolve();
       });
@@ -67,8 +79,8 @@ async function parseAndChunkFile(filePath, originalName, uploadedBy) {
 
   const splitter = new TokenTextSplitter({
     encodingName: "cl100k_base",
-    chunkSize: 2000,
-    chunkOverlap: 200,
+    chunkSize: 512,
+    chunkOverlap: 50,
   });
 
   // const splitter = new RecursiveCharacterTextSplitter({
@@ -103,5 +115,6 @@ async function parseAndChunkFile(filePath, originalName, uploadedBy) {
 
 module.exports = {
   uploadSingleFile,
+  uploadMultipleFiles,
   parseAndChunkFile
 };
